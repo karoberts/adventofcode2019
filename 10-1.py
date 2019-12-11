@@ -5,43 +5,47 @@ import itertools
 from collections import defaultdict
 sys.setrecursionlimit(5000)
 
-# https://www.geeksforgeeks.org/find-integer-point-line-segment-given-two-ends/
-def gcdExtended(a, b, xy):
-    # Base Case 
-    if a == 0:
-        xy[0] = 0; 
-        xy[1] = 1; 
-        return b; 
-  
-    xy1 = [0, 0]
-    gcd = gcdExtended(b%a, a, xy1); 
-  
-    # Update x and y using results of recursive call 
-    xy[0] = xy1[1] - (b//a) * xy1[0]; 
-    xy[1] = xy1[0]; 
-  
-    return gcd; 
+
+# Utility function to find GCD 
+# of two numbers GCD of a and b 
+gcd_memo = {}
+def gcd(a, b): 
+    if (a,b) in gcd_memo:
+        return gcd_memo[(a,b)]
+    if b == 0: 
+        return a 
+    r = gcd(b, a % b) 
+    gcd_memo[(a,b)] = r
+    return r
   
 # method prints integer point on a line with two points U and V. 
-def printIntegerPoint(pointU, pointV):
+def get_int_pt(u, v):
     # Getting coefficient of line 
-    A = (pointU[1] - pointV[1]); 
-    B = (pointV[0] - pointU[0]); 
-    C = (pointU[0] * (pointU[1] - pointV[1]) + 
-         pointU[1] * (pointV[0] - pointU[0])); 
+    A = v[1] - u[1]; 
+    B = v[0] - u[0]; 
   
-    xy = [0,0]  # To be assigned a value by gcdExtended() 
-    g = gcdExtended(A, B, xy); 
+    g = gcd(abs(A), abs(B))
+    #print('A,B,g', A, B, g, A // g, B // g)
+    return (A // g, B // g)
+
+# Finds the no. of Integral points 
+# between two given points. 
+def getCount(p, q): 
   
-    # if C is not divisible by g, then no solution is available 
-    if C % g != 0:
-        #print("No possible integer point")
-        return None
-    else:
-        # scaling up x and y to satisfy actual answer 
-        #print(xy[0], xy[1], C, g)
-        #print("Integer Point : ", (xy[0] * C//g), (xy[1] * C//g))
-        return (xy, C, g)
+    # If line joining p and q is parallel  
+    # to x axis, then count is difference 
+    # of y values 
+    if p[0] == q[0]: 
+        return abs(p[1] - q[1]) - 1
+  
+    # If line joining p and q is parallel  
+    # to y axis, then count is difference  
+    # of x values 
+    if p[1] == q[1]: 
+        return abs(p[0] - q[0]) - 1
+  
+    return gcd(abs(p[0] - q[0]),  
+               abs(p[1] - q[1])) - 1
 
 def read(fn):
     d = {}
@@ -56,7 +60,7 @@ def read(fn):
             y += 1
     return (d, x, y)
 
-p = read('10-test1.txt')
+p = read('10.txt')
 
 b = p[0]
 w = p[1]
@@ -69,39 +73,85 @@ h = p[2]
 # https://math.stackexchange.com/questions/497327/find-point-on-line-that-has-integer-coordinates
 # (sn(x) + sn(x1)
 
-p1 = (3,4)
-p2 = (1,0)
-r = printIntegerPoint(p1, p2)
-xy = r[0]
-xm = xy[0] * r[1]//r[2]
-ym = xy[1] * r[1]//r[2]
-print(r)
-print(xm, ym)
-xm = xy[0] * r[1]//r[2]
-ym = xy[1] * r[1]//r[2]
-print(xm, ym)
-exit()
-
-tot = {}
+seen = defaultdict(set)
+notseen = defaultdict(set)
 
 for kc in b.keys():
-    ct = 0
+    #print('candidate', kc)
     for kt in b.keys():
         if kc == kt:
             continue
-        r = printIntegerPoint(kc, kt)
-        if r is None:
-            ct += 1
+        if kc in seen[kt] or kt in seen[kc] or kc in notseen[kt] or kt in notseen[kc]:
+            continue
+
+        np = getCount(kc, kt)
+        if np == 0:
+            #print('  target seen [1]', kt)
+            seen[kc].add(kt)
+            seen[kt].add(kc)
+            continue
+
+        fp = get_int_pt(kc, kt)
+
+        #print(' -target', kt, np, fp)
+        
+        src = kc
+        tgt = kt
+
+        xr = src[0] + fp[1]
+        yr = src[1] + fp[0]
+        found = False
+        i = 0
+        while True:
+            i += 1
+            if i > 50: exit()
+            #print('  checking', (xr,yr))
+            if (xr,yr) in b:
+                if found:
+                    #print('  seen')
+                    seen[src].add((xr,yr))
+                    seen[(xr,yr)].add(src)
+                    found = True
+                    break
+                else: 
+                    #print('  not seen')
+                    notseen[src].add((xr,yr))
+                    notseen[(xr,yr)].add(src)
+                    found = True
+                    break
+            else:
+                #print('  empty')
+                pass
+            found = True
+            xr += fp[1]
+            yr += fp[0]
+            if (xr, yr) == tgt:
+                #print('  target seen [2]', kt)
+                seen[src].add(tgt)
+                seen[tgt].add(src)
+                break
+
+            #input('ipause')
+
+        #input('pause')
+        #print()
+
+
+#print(seen)
+#for pt in seen:
+    #print(pt, len(seen[pt]))
+
+print()
+max_f = 0
+for y in range(0,h):
+    for x in range(0,w):
+        if (x,y) in seen:
+            l = len(seen[(x,y)])
+            if l > max_f: max_f = l
+            #print(l, end='')
         else:
-            xy = r[0]
-            xm = xy[0] * r[1]//r[2]
-            ym = xy[1] * r[1]//r[2]
-            if (xm, ym) not in b:
-                ct += 1
-    print('candidate', kc, ct)
-    tot[kc] = ct
+            #print('.', end='')
+            pass
+    #print()
 
-print(tot)
-    
-
-
+print('part1', max_f)
