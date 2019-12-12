@@ -61,7 +61,7 @@ def read(fn):
             y += 1
     return (d, x, y)
 
-p = read('10-test3.txt')
+p = read('10.txt')
 
 b = p[0]
 w = p[1]
@@ -169,24 +169,38 @@ print()
 pts = {}
 for pt in seen[max_pt]:
     if max_pt[0] == pt[0]: 
-        pts[pt] = -math.pi/2 if pt[1] > max_pt[1] else math.pi/2
+        pts[pt] = math.pi if pt[1] > max_pt[1] else 0
         #print(pt, 'vert')
         continue
     if max_pt[1] == pt[1]: 
-        pts[pt] = 0 if pt[0] > max_pt[0] else -math.pi
+        pts[pt] = math.pi/2 if pt[0] > max_pt[0] else 3 * math.pi / 2
         #print(pt, 'horiz')
         continue
 
     fp = get_int_pt(max_pt, pt)
 
-    rise = -fp[0]
+    rise = fp[0]
     run = fp[1]
-    angle = math.atan(rise/run)
+
+    if rise < 0 and run > 0: # q1
+        angle = math.atan( run / (-rise) )
+    elif rise > 0 and run > 0: # q2
+        angle = math.atan( rise / run ) + math.pi / 2.0
+    elif rise > 0 and run < 0: # q3
+        angle = math.atan( (-run) / rise ) + math.pi
+    else: # q4
+        angle = math.atan( (-rise) / (-run) ) + 3*math.pi/2
 
     #print(pt, fp, angle)
     pts[pt] = angle
 
-pts = {k: v for k, v in sorted(pts.items(), key=lambda x:-x[1])}
+pts = {k: v for k, v in sorted(pts.items(), key=lambda x:x[1])}
 
+ndeleted = 1
 for pt in pts:
-    print(pt, pts[pt])
+    print('deleting', pt, pts[pt])
+    if ndeleted == 200:
+        print('200th', pt, pt[0] * 100 + pt[1])
+        exit()
+    ndeleted += 1
+    b.pop(pt)
