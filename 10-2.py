@@ -169,27 +169,24 @@ print()
 pts = {}
 for pt in seen[max_pt]:
     if max_pt[0] == pt[0]: 
-        pts[pt] = math.pi/2 if pt[1] > max_pt[1] else -math.pi/2
+        pts[pt] = -math.pi/2 if pt[1] > max_pt[1] else math.pi/2
         #print(pt, 'vert')
         continue
     if max_pt[1] == pt[1]: 
-        pts[pt] = 0 if pt[0] > max_pt[0] else math.pi
+        pts[pt] = 0 if pt[0] > max_pt[0] else -math.pi
         #print(pt, 'horiz')
         continue
 
     fp = get_int_pt(max_pt, pt)
 
-    rise = fp[0]
+    rise = -fp[0]
     run = fp[1]
-    if rise > 0:
-        angle = math.atan(rise/run)
-    else:
-        angle = math.atan(run/rise)
+    angle = math.atan(rise/run)
 
     #print(pt, fp, angle)
     pts[pt] = angle
 
-pts = {k: v for k, v in sorted(pts.items(), key=lambda x:x[1])}
+pts = {k: v for k, v in sorted(pts.items(), key=lambda x:-x[1])}
 
 for pt in pts:
     print(pt, pts[pt])
