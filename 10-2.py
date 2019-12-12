@@ -78,6 +78,7 @@ seen = defaultdict(set)
 notseen = defaultdict(set)
 
 for kc in b.keys():
+    #if kc != (8,3): continue
     #print('candidate', kc)
     for kt in b.keys():
         if kc == kt:
@@ -85,51 +86,46 @@ for kc in b.keys():
         if kc in seen[kt] or kt in seen[kc] or kc in notseen[kt] or kt in notseen[kc]:
             continue
 
-        np = getCount(kc, kt)
-        if np == 0:
-            #print('  target seen [1]', kt)
-            seen[kc].add(kt)
-            seen[kt].add(kc)
-            continue
+        fp = (0,0)
+        
+        if kc[0] == kt[0]: # vertical
+            fp = (1,0) if kc[1] < kt[1] else (-1,0)
+        elif kc[1] == kt[1]: # horizontal
+            fp = (0,1) if kc[0] < kt[0] else (0,-1)
+        else:
+            np = getCount(kc, kt)
+            if np == 0: # no integer points between
+                seen[kc].add(kt)
+                seen[kt].add(kc)
+                #print('  target seen [1]', kt, seen[kc])
+                continue
+            fp = get_int_pt(kc, kt)
 
-        fp = get_int_pt(kc, kt)
+        xr = kc[0] + fp[1]
+        yr = kc[1] + fp[0]
 
         #print(' -target', kt, np, fp)
-        
-        src = kc
-        tgt = kt
 
-        xr = src[0] + fp[1]
-        yr = src[1] + fp[0]
-        found = False
         i = 0
         while True:
             i += 1
             if i > 50: exit()
             #print('  checking', (xr,yr))
             if (xr,yr) in b:
-                if found:
-                    #print('  seen')
-                    seen[src].add((xr,yr))
-                    seen[(xr,yr)].add(src)
-                    found = True
-                    break
-                else: 
-                    #print('  not seen')
-                    notseen[src].add((xr,yr))
-                    notseen[(xr,yr)].add(src)
-                    found = True
-                    break
-            else:
-                #print('  empty')
-                pass
-            found = True
+                #print('  maybe target seen [1]', (xr,yr), kt)
+                seen[kc].add((xr,yr))
+                seen[(xr,yr)].add(kc)
+                if (xr,yr) != kt:
+                    #print('  in the way', (xr,yr), kt)
+                    notseen[kc].add(kt)
+                    notseen[kt].add(kc)
+                break
             xr += fp[1]
             yr += fp[0]
-            if (xr, yr) == tgt:
+            if (xr, yr) == kt:
                 #print('  target seen [2]', kt)
-                seen[src].add(tgt)
-                seen[tgt].add(src)
+                seen[kc].add(kt)
+                seen[kt].add(kc)
                 break
 
             #input('ipause')
@@ -158,23 +154,42 @@ for y in range(0,h):
             pass
     #print()
 
-print('best', max_pt)
-seen.pop(max_pt)
+print('best', max_pt, len(seen[max_pt]))
 #print('seen', seen[max_pt])
 
 # 1st quad: -pi/2 to 0
 # 2nd quad: 0 to pi/2
 # 3rd quad: 
 
+print()
+for pt in notseen[max_pt]:
+    print(pt)
+print()
+
 pts = {}
-for pt in seen:
+for pt in seen[max_pt]:
     if max_pt[0] == pt[0]: 
-        print('vert', pt)
+        pts[pt] = math.pi/2 if pt[1] > max_pt[1] else -math.pi/2
+        #print(pt, 'vert')
         continue
     if max_pt[1] == pt[1]: 
-        print('horiz', pt)
+        pts[pt] = 0 if pt[0] > max_pt[0] else math.pi
+        #print(pt, 'horiz')
         continue
 
     fp = get_int_pt(max_pt, pt)
-    #print(pt, fp, math.atan2(fp[0], fp[1]))
-    pts[pt] = math.atan2(fp[0], fp[1])
+
+    rise = fp[0]
+    run = fp[1]
+    if rise > 0:
+        angle = math.atan(rise/run)
+    else:
+        angle = math.atan(run/rise)
+
+    #print(pt, fp, angle)
+    pts[pt] = angle
+
+pts = {k: v for k, v in sorted(pts.items(), key=lambda x:x[1])}
+
+for pt in pts:
+    print(pt, pts[pt])
