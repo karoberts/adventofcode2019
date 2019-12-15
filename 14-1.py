@@ -2,14 +2,18 @@ import re
 import sys
 import json
 import itertools
+import math
 from collections import defaultdict
 sys.setrecursionlimit(5000)
 
-with open('14-test1b.txt') as f:
+with open('14-test1d.txt') as f:
     fuel = None
     prod = dict()
     needsore = dict()
     oretomake = dict()
+    tomake = dict()
+
+    totneed = defaultdict(lambda:0)
 
     for line in (l.strip() for l in f.readlines()):
         sides = line.split(' => ')
@@ -22,6 +26,7 @@ with open('14-test1b.txt') as f:
             if y[1] == 'ORE':
                 oretomake[os[1]] = int(y[0])
 
+        tomake[os[1]] = int(os[0])
         prod[os[1]] = {'c':int(os[0]), 'i': inputs}
 
     for k,v in prod.items():
@@ -31,72 +36,64 @@ with open('14-test1b.txt') as f:
 
     print('needsore', needsore)
     print('oretomake', oretomake)
+    print('tomake', tomake)
 
     #print(prod)
     #print(prod['FUEL'])
 
     q = []
-    q.append('FUEL')
+    q.append(('FUEL', 1))
     extras = defaultdict(lambda:0)
-    chneed = defaultdict(lambda:0)
-    chneed['FUEL'] = 1
 
     oreneed = defaultdict(lambda:0)
 
+    extra_ore = 0
+
     while len(q) > 0:
-        ch = q.pop(0)
-        n = (ch, chneed[ch])
+        n = q.pop(0)
         print('trying to make', n[1], n[0])
 
         for need in prod[n[0]]['i']:
-            if chneed[n[0]] == 0:
-                continue
-
             ineed = need[1] * n[1]
+            #print(need, n)
 
             if need[0] in needsore:
-                print('  - will need ORE for ', ineed, need[0])
-                oreneed[need[0]] += ineed
+                if n[1] < tomake[n[0]]:
+                    o = need[1]
+                elif n[1] % tomake[n[0]] == 0:
+                    o = (n[1] // tomake[n[0]]) * need[1]
+                else:
+                    print('==> making extra ORE')
+                    o = math.ceil(n[1] / tomake[n[0]]) * need[1]
+                    extra_ore += (o - (n[1] // tomake[n[0]]) * need[1])
+
+                print('o',o, 'n1', n[1], 'need1', need[1], 'tomaken0', tomake[n[0]], 'tomakeneed0', tomake[need[0]])
+
+                print('  - will need ORE for ', o, need[0], need[1], n[1], tomake[need[0]], tomake[n[0]])
+                oreneed[need[0]] += o
                 continue
 
             canmake = prod[need[0]]['c']
 
-            if ineed % canmake == 0:
-                multiple = ineed
-            elif ineed < canmake:
-                multiple = canmake
-                #print('    making', multiple - ineed, 'extra', need[0])
-                #extras[need[0]] += (multiple - ineed)
-            else:
-                multiple = ((ineed // canmake) + 1) * canmake
-                """
-                while extras[need[0]] > 0 and multiple % ineed != 0:
-                    print('    using an extra', need[0])
-                    multiple -= 1
-                    extras[need[0]] -= 1
-                print('    making', multiple - ineed, 'extra', need[0])
-                """
-                #extras[need[0]] += (multiple - ineed)
+            print('  need to make', ineed, need[0])
+            totneed[need[0]] += ineed
+            q.append((need[0], ineed))
 
-            print('  need to make', multiple, need[0])
-            q.append(need[0])
-            chneed[need[0]] += multiple
-
-    #print(chneed)
-    #print(extras)
+    print('totneed', totneed)
     print('oreneed', oreneed)
 
     ore = 0
     for k, v in oreneed.items():
         print('** need to make', v, k, 'with', needsore[k], k, 'per', oretomake[k], 'ORE' )
         o = 0
-        if v % needsore[k] == 0:
-            o = (v // needsore[k]) * oretomake[k]
-        elif v < needsore[k]:
+        if v < needsore[k]:
             o = needsore[k] * oretomake[k]
+        elif v % needsore[k] == 0:
+            o = (v // needsore[k]) * oretomake[k]
         else:
-            o = (v // needsore[k] + 1) * oretomake[k]
+            o = math.ceil(v / needsore[k]) * oretomake[k]
         print('  used', o, 'ORE to make', v, k)
         ore += o
 
     print(ore)
+    print(extra_ore)
