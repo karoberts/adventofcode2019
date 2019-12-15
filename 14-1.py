@@ -3,6 +3,7 @@ import sys
 import json
 import itertools
 import math
+import fractions
 from collections import defaultdict
 sys.setrecursionlimit(5000)
 
@@ -43,20 +44,16 @@ with open('14-test1d.txt') as f:
 
     q = []
     q.append(('FUEL', 1))
-    extras = defaultdict(lambda:0)
-
     oreneed = defaultdict(lambda:0)
-
-    extra_ore = 0
+    fracs = defaultdict(lambda:fractions.Fraction(0,1))
 
     while len(q) > 0:
         n = q.pop(0)
         print('trying to make', n[1], n[0])
 
         for need in prod[n[0]]['i']:
-            ineed = need[1] * n[1]
-            #print(need, n)
 
+            """
             if need[0] in needsore:
                 if n[1] < tomake[n[0]]:
                     o = need[1]
@@ -65,22 +62,28 @@ with open('14-test1d.txt') as f:
                 else:
                     print('==> making extra ORE')
                     o = math.ceil(n[1] / tomake[n[0]]) * need[1]
-                    extra_ore += (o - (n[1] // tomake[n[0]]) * need[1])
 
                 print('o',o, 'n1', n[1], 'need1', need[1], 'tomaken0', tomake[n[0]], 'tomakeneed0', tomake[need[0]])
 
                 print('  - will need ORE for ', o, need[0], need[1], n[1], tomake[need[0]], tomake[n[0]])
                 oreneed[need[0]] += o
                 continue
+            """
 
-            canmake = prod[need[0]]['c']
+            fracneed = fractions.Fraction(need[1], tomake[n[0]])
+            print('  need to make', fracneed, need[0])
 
-            print('  need to make', ineed, need[0])
-            totneed[need[0]] += ineed
+            ineed = need[1] * n[1]
+            #canmake = prod[need[0]]['c']
+
+            #print('  need to make', ineed, need[0])
+            #totneed[need[0]] += ineed
             q.append((need[0], ineed))
 
     print('totneed', totneed)
     print('oreneed', oreneed)
+
+    exit()
 
     ore = 0
     for k, v in oreneed.items():
@@ -96,4 +99,3 @@ with open('14-test1d.txt') as f:
         ore += o
 
     print(ore)
-    print(extra_ore)
