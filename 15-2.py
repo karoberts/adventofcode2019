@@ -116,6 +116,19 @@ def printg(g, d, _min, _max, deadends, oxy):
         print()
     print()
 
+def printg2(g, _max, oxy):
+    for y in range(0, _max[1] + 1):
+        for x in range(0, _max[0] + 1):
+            c = (x,y)
+            if c == oxy:
+                print('!', end='')
+            elif c in g:
+                print(g[c], end='')
+            else:
+                print(' ', end='')
+        print()
+    print()
+
 NORTH = 1
 SOUTH = 2
 WEST = 3
@@ -139,6 +152,47 @@ def done():
     printg(grid, d, _min, _max, deadends, oxy)
     exit()
 
+def recur(grid:dict, ppos:tuple, pos:tuple, minutes:int):
+    depths = []
+    for dir in range(1, 4+1):
+        npos = _next(pos, dir)
+        if npos == ppos:
+            continue
+        g = grid[npos]
+        if g == '-':
+            grid[npos] = 'O'
+            depths.append( recur(grid, pos, npos, minutes + 1) )
+    if len(depths) == 0:
+        return minutes
+    return max(depths)
+
+
+with open('15-2-fullmap.txt') as f:
+    grid = dict()
+    y = 0
+    oxy = None
+    for line in (l.strip() for l in f.readlines()):
+        for x in range(0, len(line)):
+            grid[(x,y)] = line[x]
+            if line[x] == '!':
+                grid[(x,y)] = '-'
+                oxy = (x,y)
+        y += 1
+    _max = (x,y)
+
+    printg2(grid, _max, oxy)
+
+    minutes = recur(grid, None, oxy, 0)
+
+    printg2(grid, _max, oxy)
+
+    print('part2', minutes)
+
+exit()
+
+
+
+# generates the map, loading from txt to save time
 with open('15.txt') as f:
     ops = defaultdict(lambda:0)
     i = 0
@@ -244,4 +298,6 @@ with open('15.txt') as f:
         #printg(grid, d, _min, _max, deadends, oxy)
         #input('next')
 
-    done()
+    #done()
+
+
