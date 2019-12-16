@@ -28,9 +28,12 @@ with open('16.txt') as f:
     for phase in range(0, 100):
         for d in range(0, len(digits)):
             val = 0
-            pat = list(make_base(d, len(digits)))
-            for i in range(0, len(digits)):
-                val += pat[i] * digits[i]
+            i = 0
+            for pat in make_base(d, len(digits)):
+                val += pat * digits[i]
+                i += 1
+                if i == len(digits):
+                    break
             val = abs(val) % 10
             odigits[d] = val
         digits = odigits
