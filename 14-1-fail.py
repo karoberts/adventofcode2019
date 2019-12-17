@@ -7,7 +7,29 @@ import fractions
 from collections import defaultdict
 sys.setrecursionlimit(5000)
 
-with open('14-test1d.txt') as f:
+def canmake_fuel(prod:dict, tomake:dict, bag:dict, cur:str, prevNeed:int, depth:int):
+    for inp, needOfInp in prod[cur]['i']:
+        if inp == 'ORE':
+            return
+
+        if inp not in bag:
+            print(' ' * depth, 'trying to make', needOfInp, inp)
+            canmake_fuel(prod, tomake, bag, inp, needOfInp, depth + 1)
+
+        print(' ' * depth, 'checking for', needOfInp * prevNeed, inp)
+        if bag[inp] < needOfInp:
+            print('not enough', inp, 'need', needOfInp, 'have', bag[inp])
+            exit()
+
+        print(' ' * depth, 'using', needOfInp * prevNeed, inp)
+        bag[inp] -= (needOfInp * prevNeed)
+        print(' ' * depth, 'bag has', bag[inp], inp, 'left')
+        
+    bag[cur] += tomake[cur] * prevNeed
+
+    pass
+
+with open('14-test2.txt') as f:
     fuel = None
     prod = dict()
     needsore = dict()
@@ -53,7 +75,6 @@ with open('14-test1d.txt') as f:
 
         for need in prod[n[0]]['i']:
 
-            """
             if need[0] in needsore:
                 if n[1] < tomake[n[0]]:
                     o = need[1]
@@ -68,7 +89,6 @@ with open('14-test1d.txt') as f:
                 print('  - will need ORE for ', o, need[0], need[1], n[1], tomake[need[0]], tomake[n[0]])
                 oreneed[need[0]] += o
                 continue
-            """
 
             fracneed = fractions.Fraction(need[1], tomake[n[0]])
             print('  need to make', fracneed, need[0])
@@ -83,7 +103,7 @@ with open('14-test1d.txt') as f:
     print('totneed', totneed)
     print('oreneed', oreneed)
 
-    exit()
+    bag = defaultdict(lambda:0)
 
     ore = 0
     for k, v in oreneed.items():
@@ -96,6 +116,12 @@ with open('14-test1d.txt') as f:
         else:
             o = math.ceil(v / needsore[k]) * oretomake[k]
         print('  used', o, 'ORE to make', v, k)
+        bag[k] = o 
         ore += o
 
+    print(bag)
     print(ore)
+
+    canmake_fuel(prod, tomake, bag, 'FUEL', 1, 0)
+
+    print(bag)
