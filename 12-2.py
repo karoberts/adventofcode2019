@@ -28,6 +28,7 @@ moon 3:
  z: 48081 [26,10,10,26,3268,343,4037,7281,6269,5650,6269,7281,4037,343,3268]
 """
 
+"""
 moons = {}
 
 moons[0] = {0: (58171, [169988,48383,6335,1344,2110,2110,1344,6335,48383]),
@@ -90,6 +91,25 @@ while True:
         print(msteps[3][0])
 
 exit()
+"""
+
+# This function computes GCD 
+def compute_gcd(x, y):
+   while(y):
+       x, y = y, x % y
+   return x
+# This function computes LCM
+def compute_lcm(x, y):
+   lcm = (x*y)//compute_gcd(x,y)
+   return lcm
+
+xseq = 286332
+yseq = 161428
+zseq = 96236
+
+l = compute_lcm(xseq, compute_lcm(yseq, zseq))
+print('part2', l)
+exit()
 
 
 with open('12.txt') as f:
@@ -110,7 +130,7 @@ with open('12.txt') as f:
     step = 0
     while True:
 
-        if step > 0 and step % 1000000 == 0:
+        if step > 0 and step % 2000000 == 0:
             #print(step)
             break
 
@@ -133,14 +153,16 @@ with open('12.txt') as f:
         for m in moons.keys():
             for i in range(0,3):
                 moons[m]['p'][i] += moons[m]['v'][i]
-                if moons[m]['p'][i] == orig[m]['p'][i] and moons[m]['v'][i] == orig[m]['v'][i]:
-                    cycles[(m,i)].append(step)
+
+        for c in range(0,3):
+            if moons[0]['p'][c] == orig[0]['p'][c] and moons[0]['v'][c] == orig[0]['v'][c] and moons[1]['p'][c] == orig[1]['p'][c] and moons[1]['v'][c] == orig[1]['v'][c] and moons[2]['p'][c] == orig[2]['p'][c] and moons[2]['v'][c] == orig[2]['v'][c]:
+                cycles[c].append(step)
             
         step += 1
 
-for m in range(0,4):
-    for coord in range(0,3):
-        print(m, coord)
-        for s in cycles[(m,coord)]:
-            print(s)
-        print()
+for i in range(0,3):
+    print('coord', i)
+    ps = 0
+    for s in cycles[i]:
+        print(s, s - ps)
+        ps = s
