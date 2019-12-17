@@ -115,6 +115,8 @@ with open('17.txt') as f:
         ops[i] = int(x)
         i += 1
 
+    o_ops = ops.copy()
+
     inp = []
     ctx =  {'p': 0, 'pi':0, 'rb':0}
 
@@ -143,13 +145,46 @@ with open('17.txt') as f:
         if y > _max[1]: _max[1] = y
 
     printg(grid, _max)
-
+    
     intersects = 0
     for y in range(_min[1], _max[1]):
         for x in range(_min[0], _max[0]):
             if grid[(x,y)] == '#' and grid[(x-1,y)] == '#' and grid[(x+1,y)] == '#' and grid[(x,y-1)] == '#' and grid[(x,y+1)] == '#':
                 intersects += x * y
-    print(intersects)
+    print('part1', intersects)    
 
+    #    --------------------
+    # A: L,4,L,6,L,8,L,12
+    # B: L,8,R,12,L,12
+    # C: R,12,L,6,L,6,L,8
 
+    # 'L,4,L,6,L,8,L,12,L,8,R,12,L,12,L,8,R,12,L,12'
+    # 'L,4,L,6,L,8,L,12,L,8,R,12,L,12,R,12,L,6,L,6'
+    # 'L,8,L,4,L,6,L,8,L,12,R,12,L,6,L,6,L,8,L,8,
+    # 'R,12,L,12,R,12,L,6,L,6,L,8'
 
+    # 'A,B,B,A,B,C,A,C,B,C'
+
+    ctx =  {'p': 0, 'pi':0, 'rb':0}
+    ops = o_ops
+    ops[0] = 2
+
+    inp = [ord(x) for x in 'A,B,B,A,B,C,A,C,B,C'] + [10]
+    inp += [ord(x) for x in 'L,4,L,6,L,8,L,12'] + [10]
+    inp += [ord(x) for x in 'L,8,R,12,L,12'] + [10]
+    inp += [ord(x) for x in 'R,12,L,6,L,6,L,8'] + [10]
+    inp += [ord('n'), 10]
+
+    #print(inp)
+
+    outp = ''
+    while True:
+        r = run_prog(ops, ctx, inp)
+        if r is None:
+            break
+        if r > 127:
+            print('part2', r)
+            break
+        outp += chr(r)
+
+    #print('output', outp)
