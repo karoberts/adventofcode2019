@@ -8,28 +8,53 @@ from collections import defaultdict
 sys.setrecursionlimit(5000)
 
 def canmake_fuel(prod:dict, tomake:dict, bag:dict, cur:str, prevNeed:int, depth:int):
+    oredelt = 0
     for inp, needOfInp in prod[cur]['i']:
         if inp == 'ORE':
-            return
+            print(' ' * depth, 'wants more ORE', needOfInp, prevNeed, tomake[cur])
+            gen = 0
+            while gen < prevNeed:
+                bag[cur] += tomake[cur]
+                gen += tomake[cur]
+                oredelt += needOfInp
+            return oredelt
 
         if inp not in bag:
-            print(' ' * depth, 'trying to make', needOfInp, inp)
-            canmake_fuel(prod, tomake, bag, inp, needOfInp, depth + 1)
+            print(' ' * depth, 'trying to make', needOfInp * prevNeed, inp)
+            oredelt += canmake_fuel(prod, tomake, bag, inp, needOfInp * prevNeed, depth + 1)
 
-        print(' ' * depth, 'checking for', needOfInp * prevNeed, inp)
-        if bag[inp] < needOfInp:
-            print('not enough', inp, 'need', needOfInp, 'have', bag[inp])
+        if prevNeed < prod[cur]['c']:
+            prevNeed = prod[cur]['c']
+        #roundup = math.ceil(needOfInp / tomake[k]) * prevNeed
+        roundup = math.ceil(prevNeed / prod[cur]['c']) * prod[cur]['c']
+        if prevNeed < prod[cur]['c']:
+            needNow = roundup
+        elif prevNeed % prod[cur]['c'] != 0:
+            print(' ' * depth, 'nums', needOfInp, tomake[k], prevNeed, roundup, prod[cur]['c'])
+            needNow = roundup
+            #exit()
+        else:
+            needNow = prevNeed // prod[cur]['c'] * needOfInp
+        print(' ' * depth, 'checking for', needNow, inp)
+        #print(' ' * depth, 'nums', needOfInp, tomake[k], prevNeed, roundup, prod[cur]['c'])
+        if bag[inp] < needNow:
+            print(' ' * depth, 'trying to make more', needNow - bag[inp], inp)
+            oredelt += canmake_fuel(prod, tomake, bag, inp, needNow - bag[inp], depth + 1)
+
+        if bag[inp] < needNow:
+            print('not enough', inp, 'need', needNow, 'have', bag[inp])
             exit()
 
-        print(' ' * depth, 'using', needOfInp * prevNeed, inp)
-        bag[inp] -= (needOfInp * prevNeed)
+        print(' ' * depth, 'using', needNow, inp, 'of', bag[inp])
+        bag[inp] -= needNow
         print(' ' * depth, 'bag has', bag[inp], inp, 'left')
         
-    bag[cur] += tomake[cur] * prevNeed
+    print(' ' * depth, 'adding', prevNeed, cur, 'to bag')
+    bag[cur] += prevNeed
 
-    pass
+    return oredelt
 
-with open('14-test2.txt') as f:
+with open('14-test4.txt') as f:
     fuel = None
     prod = dict()
     needsore = dict()
@@ -115,13 +140,31 @@ with open('14-test2.txt') as f:
             o = (v // needsore[k]) * oretomake[k]
         else:
             o = math.ceil(v / needsore[k]) * oretomake[k]
-        print('  used', o, 'ORE to make', v, k)
-        bag[k] = o 
+
+        roundup = math.ceil(v / needsore[k]) * needsore[k]
+
+        print('  used', o, 'ORE to make', roundup, k)
+        # print('     ', o, roundup, k, needsore[k], oretomake[k])
+        bag[k] = roundup
         ore += o
 
     print(bag)
-    print(ore)
 
-    canmake_fuel(prod, tomake, bag, 'FUEL', 1, 0)
+    oredelt = canmake_fuel(prod, tomake, bag, 'FUEL', 1, 0)
+
+    bag['FUEL'] = 0
+
+    for ch, c in bag.items():
+        if c == 0: continue
+        #if ch in needsore and c >= needsore[ch]:
+        #    print('-- have', c - needsore[ch], 'too many', ch, prod[ch]['c'])
+        if (c - prod[ch]['c']) >= prod[ch]['c']:
+            print('-- have', c - prod[ch]['c'], 'too many (!)', ch, c, prod[ch]['c'])
+            toremove = (c // prod[ch]['c']) * oretomake[ch]
+            print('-- removing', toremove)
+            oredelt -= toremove
 
     print(bag)
+    print(ore)
+    print(oredelt)
+    print(ore + oredelt)
