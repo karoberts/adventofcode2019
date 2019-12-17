@@ -6,13 +6,10 @@ sys.setrecursionlimit(5000)
 
 def make_base(pos:int, dlen:int):
     basesig = [0, 1, 0, -1]
-    bpos = 0
-    ngen = 0
+    bpos = 1
+    ngen = d
     while ngen < dlen + 1:
         for j in range(0, pos + 1):
-            if ngen == 0 and j == 0:
-                ngen += 1
-                continue 
             yield basesig[bpos]
             ngen += 1
         bpos += 1
@@ -24,13 +21,13 @@ with open('16.txt') as f:
     digits = []
     repeat = 10000
 
-    orig_digits = [1,2,3,4,5,6,7,8]
-    repeat = 10
+    #orig_digits = [1,2,3,4,5,6,7,8]
+    #repeat = 10
 
     for i in range(0, repeat):
         digits.extend(orig_digits)
 
-    print(digits)
+    #print(digits)
 
     offset = int(''.join((str(x) for x in orig_digits[0:8])))
     print('offset', offset, 'digitlen', len(digits))
@@ -39,8 +36,8 @@ with open('16.txt') as f:
     for phase in range(0, 100):
         for d in range(0, len(digits)):
             val = 0
-            #print('dig', d)
-            i = 0
+            print('dig', d)
+            i = d
             #print('base gen')
             for pat in make_base(d, len(digits)):
                 val += pat * digits[i]
@@ -52,7 +49,7 @@ with open('16.txt') as f:
             odigits[d] = val
             #print('next')
         digits = odigits
-        print(''.join((str(x) for x in digits[0:50])))
+        #print(''.join((str(x) for x in digits[0:50])))
         print(phase + 1)
         #print(phase, odigits)
 
