@@ -84,34 +84,52 @@ def dijkstra(me, grid, _max):
 
     return keys
 
-count = 0
-min_end = 999999999999
+# 5122 too high  cnkeoiqdjrtwbuzvyfhmalgsxp
+# first set [((33, 48), 'o', 16), ((45, 50), 'n', 28), ((3, 50), 'c', 88), ((55, 2), 'z', 104)]
 
-def recur(me, grid, doors, _max, dist, seq):
-    global count, min_end
+count = 0
+min_end = 5122
+min_seq = None
+
+min_end = 5122
+
+def recur(me, grid, doors, _keys, _max, dist, seq):
+    global count, min_end, min_seq
     keys = dijkstra(me, grid, _max)
+    #print(keys)
+    #return
 
     rets = []
-    for k in keys:
+    for k in sorted(keys, key=lambda x:x[2]):
         door = k[1].upper()
-        if count % 1000 == 0:
-            print(count, 'trying', seq, k[1], dist)
+        if count % 10000 == 0:
+            print(count, 'trying', seq, k[1], dist, 'min', min_end, min_seq)
         count += 1
-        if door not in doors or len(seq) == len(doors):
+        if len(seq) == len(_keys):
             if dist + k[2] < min_end:
-                print('new min_end', dist + k[2], door)
+                print('new min_end', dist + k[2], seq, k[1], len(seq))
                 min_end = dist + k[2]
+                min_seq = seq + k[1]
             rets.append(dist + k[2])
             continue
         if dist + k[2] > min_end:
             continue
         gridnew = grid.copy()
         gridnew[k[0]] = '.'
-        gridnew[doors[door]] = '.'
-        rets.append( recur(k[0], gridnew, doors, _max, dist + k[2], str(seq) + k[1]) )
+        if door in doors: # some keys don't have matching doors
+            gridnew[doors[door]] = '.'
+        rets.append( recur(k[0], gridnew, doors, _keys, _max, dist + k[2], str(seq) + k[1]) )
 
     if len(rets) == 0:
-        return 999999999
+        if len(seq) == len(_keys):
+            if dist < min_end:
+                print('new min_end', dist, seq)
+                min_end = dist
+                min_end = seq
+            elif dist == min_end:
+                print('another min_end', dist, seq)
+            return dist
+        return 99999999
 
     return min(rets)
 
@@ -120,6 +138,7 @@ with open('18.txt') as f:
 
     grid = dict()
     doors = dict()
+    _keys = dict()
     me = None
     y = 0
     for line in (l.strip() for l in f.readlines()):
@@ -130,14 +149,17 @@ with open('18.txt') as f:
                 me = (x,y)
             elif line[x] in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ':
                 doors[line[x]] = (x,y)
+            elif line[x] in 'abcdefghijklmnopqrstuvwxyz':
+                _keys[line[x]] = (x,y)
         y += 1
     _max = (x,y)
 
     printg2(grid, _max, me)
     print(me)
     print(doors)
+    print(len(_keys), _keys)
 
-    ret = recur(me, grid.copy(), doors, _max, 0, '')
+    ret = recur(me, grid.copy(), doors, _keys, _max, 0, '')
     print(ret)
 
     exit()
