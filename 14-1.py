@@ -24,13 +24,22 @@ class Recipe:
     def __repr__(self):
         return '({} from {})'.format(self.output, self.inputs)
 
-def get_min_amount(chemToMake:Chemical, recipe:Recipe, amountMultiplier:int) -> int:
+def get_min_amount(chemToMake:Chemical, toMakeRecipe:Recipe, amountMultiplier:int) -> int:
     amountNeeded:int = chemToMake.amount * amountMultiplier
-    if amountNeeded < recipe.output.amount:
-        return recipe.output
-    if amountNeeded % recipe.output.amount == 0:
-        return amountNeeded // recipe.output.amount
-    return math.ceil(amountNeeded / recipe.output.amount) * recipe.output.amount
+    #print('min', chemToMake, toMakeRecipe, amountMultiplier)
+
+    if amountNeeded < toMakeRecipe.output.amount:
+        return toMakeRecipe.output.amount
+    if amountNeeded % toMakeRecipe.output.amount == 0:
+        return amountNeeded # // toMakeRecipe.output.amount
+    return math.ceil(amountNeeded / toMakeRecipe.output.amount) * toMakeRecipe.output.amount
+
+def get_min_amount_ore(chemToMake:Chemical, toMakeRecipe:Recipe, amountToMake:int) -> int:
+    if amountToMake < toMakeRecipe.output.amount:
+        return toMakeRecipe.output.amount * chemToMake.amount
+    if amountToMake % toMakeRecipe.output.amount == 0:
+        return (amountToMake // toMakeRecipe.output.amount) * chemToMake.amount
+    return math.ceil(amountToMake / toMakeRecipe.output.amount) * chemToMake.amount
 
 def generate(recipes:Dict[str,Recipe], cur:str, amount:int, made:DefaultDict[str,int], depth:int):
     curRecipe = recipes[cur]
@@ -41,7 +50,7 @@ def generate(recipes:Dict[str,Recipe], cur:str, amount:int, made:DefaultDict[str
     inputChem:Chemical = None
 
     if curRecipe.inputs[0].name == 'ORE':
-        min_amount:int = get_min_amount(curRecipe.inputs[0], curRecipe, amount)
+        min_amount:int = get_min_amount_ore(curRecipe.inputs[0], curRecipe, amount)
         print(' ' * depth, 'going to make', min_amount, 'ORE for', amount, 'of', cur, curRecipe.inputs[0])
         made['ORE'] += min_amount
         return
