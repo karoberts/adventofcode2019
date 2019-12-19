@@ -7,51 +7,43 @@ import fractions
 from collections import defaultdict
 sys.setrecursionlimit(5000)
 
-def canmake_fuel(prod:dict, bag:dict, cur:str, depth:int)
-    if cur == 'ORE':
-        return
+class Chemical:
+    def __init__(self, name:str, amount:int):
+        self.name:str = name
+        self.amount:int = amount
 
-    for inp, needOfInp in prod[cur]['i']:
-        if inp == 'ORE':
-            #print(' ' * depth, '  =>  ', i[0], i[1], i[1] * frac)
-            #ores[cur] += (frac * i[1])
-            break
+    def __repr__(self):
+        return '{} {}'.format(self.amount, self.name)
 
-        
+class Recipe:
+    def __init__(self, result:str, resultCount:int, inputs:list):
+        self.output:Chemical = Chemical(result, resultCount)
+        self.inputs:dict = inputs.copy()
 
-        #print(' ' * depth, i[0], 'need', i[1] * frac, 'canmake', tomake[i[0]], 'mult', nfrac)
-        recur(prod, i[0], depth + 1, nfrac)
-    pass
+    def __repr__(self):
+        return '{} from {}'.format(self.output, self.inputs)
 
-with open('14-test1.txt') as f:
-    fuel = None
-    prod = dict()
-    needsore = dict()
-    oretomake = dict()
-    tomake = dict()
 
-    oreNodes = dict()
+
+with open('14-test2.txt') as f:
+
+    recipes:dict = {}
+    ore_recipes:dict = {}
 
     for line in (l.strip() for l in f.readlines()):
         sides = line.split(' => ')
-
         made = sides[1].split(' ')
         inputs = []
         for x in sides[0].split(', '):
             inp = x.split(' ')
-            inputs.append((inp[1], int(inp[0])))
+            inputs.append(Chemical(inp[1], int(inp[0])))
             if inp[1] == 'ORE':
-                oretomake[made[1]] = int(inp[0])
-                oreNodes[made[1]] = made[0]
+                ore_recipes[made[1]] = Recipe(made[1], int(made[0]), [Chemical('ORE', int(inp[0]))])
 
-        tomake[made[1]] = int(made[0])
-        prod[made[1]] = {'c':int(made[0]), 'i': inputs}
+            recipes[made[1]] = Recipe(made[1], int(made[0]), inputs)
 
-    bag = defaultdict(lambda:0)
-    oreMade = defaultdict(lambda:0)
+        #tomake[made[1]] = int(made[0])
+        #prod[made[1]] = {'c':int(made[0]), 'i': inputs}
 
-    for ch, co in oreNodes.items():
-        print('{} ORE for {} {}'.format(oretomake[ch], co, ch))
-        bag[ch] += co
-        oreMade[ch] += oretomake[ch]
-    
+    print(recipes) 
+    print(ore_recipes) 
