@@ -145,13 +145,16 @@ with open('14-test3.txt') as f:
         print('  can reduce')
         reduced:int = 0
         while amtMade >= recipe.output.amount:
-            print('  reducing', recipe.output.amount, 'of', chemName)
+            #print('  reducing', recipe.output.amount, 'of', chemName)
             amtMade -= recipe.output.amount
             reduced += recipe.output.amount
-        print('  left with', amtMade, 'of', chemName)
+        print('  left with', amtMade, 'of', chemName, 'after reducing by', reduced)
+        made[chemName] = amtMade
 
         if recipe.inputs[0].name == 'ORE':
-            made['ORE'] -= (reduced // recipe.output.amount) * recipe.inputs[0].amount
+            oreReduction = (reduced // recipe.output.amount) * recipe.inputs[0].amount
+            print('  reducing ORE by', oreReduction)
+            made['ORE'] -= oreReduction
 
     print()
     print('made',made)
