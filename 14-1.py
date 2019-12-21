@@ -4,7 +4,7 @@ import json
 import itertools
 import math
 import fractions
-from typing import List, Dict, DefaultDict
+from typing import List, Dict, DefaultDict, Tuple
 from collections import defaultdict
 sys.setrecursionlimit(5000)
 
@@ -24,15 +24,16 @@ class Recipe:
     def __repr__(self):
         return '({} from {})'.format(self.output, self.inputs)
 
-def generate(recipes:Dict[str,Recipe], cur:str, amount:int, made:DefaultDict[str,int], extras:DefaultDict[str,int], depth:int):
+def generate(recipes:Dict[str,Recipe], cur:str, amount:int, made:DefaultDict[str,int], extras:DefaultDict[str,int], depth:int) -> Tuple[int, int]:
     def get_min_amount(chemToMake:Chemical, toMakeRecipe:Recipe, amountMultiplier:int) -> int:
-        amountNeeded:int = chemToMake.amount# * amountMultiplier
-        #print('min', chemToMake, toMakeRecipe, amountMultiplier)
+        amountNeeded:int = chemToMake.amount * amountMultiplier
+        print('min', amountNeeded, chemToMake, toMakeRecipe, amountMultiplier)
 
+        r:int = 0
         if amountNeeded < toMakeRecipe.output.amount:
             r = toMakeRecipe.output.amount
         elif amountNeeded % toMakeRecipe.output.amount == 0:
-            r = (amountNeeded // toMakeRecipe.output.amount)
+            r = amountNeeded
         else:
             r = math.ceil(amountNeeded / toMakeRecipe.output.amount) * toMakeRecipe.output.amount
 
@@ -47,9 +48,14 @@ def generate(recipes:Dict[str,Recipe], cur:str, amount:int, made:DefaultDict[str
             print('-- made an extra', chemToMake.name, (r-amountNeeded), r, amountNeeded)
             extras[chemToMake.name] += (r - amountNeeded)
 
-        return r
+        newMultiplier:int = r // toMakeRecipe.output.amount
+
+        print('min', r, newMultiplier)
+
+        return (r, newMultiplier)
 
     def get_min_amount_ore(chemToMake:Chemical, toMakeRecipe:Recipe, amountToMake:int) -> int:
+        print('ore', chemToMake, toMakeRecipe, amountToMake)
         if amountToMake < toMakeRecipe.output.amount:
             r = toMakeRecipe.output.amount * chemToMake.amount
         elif amountToMake % toMakeRecipe.output.amount == 0:
@@ -74,13 +80,13 @@ def generate(recipes:Dict[str,Recipe], cur:str, amount:int, made:DefaultDict[str
 
     for inputChem in curRecipe.inputs:
         inputRecipe:Chemical = recipes[inputChem.name]
-        min_amount:int = get_min_amount(inputChem, inputRecipe, amount)
-        print(' ' * depth, 'making', min_amount, 'of', inputChem.name, 'using', inputRecipe)
-        made[inputChem.name] += min_amount
-        generate(recipes, inputChem.name, min_amount, made, extras, depth + 1)
+        next_amts:int = get_min_amount(inputChem, inputRecipe, amount)
+        print(' ' * depth, 'making', next_amts, 'of', inputChem.name, 'using', inputRecipe)
+        made[inputChem.name] += next_amts[0]
+        generate(recipes, inputChem.name, next_amts[0], made, extras, depth + 1)
 
 
-with open('14-test5.txt') as f:
+with open('14-test3.txt') as f:
 
     recipes:Dict[str,Recipe] = {}
     ore_recipes:Dict[str,Recipe] = {}
