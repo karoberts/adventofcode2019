@@ -27,7 +27,7 @@ class Recipe:
 def generate(recipes:Dict[str,Recipe], cur:str, amount:int, made:DefaultDict[str,int], extras:DefaultDict[str,int], depth:int) -> Tuple[int, int]:
     def get_min_amount(chemToMake:Chemical, toMakeRecipe:Recipe, amountMultiplier:int) -> int:
         amountNeeded:int = chemToMake.amount * amountMultiplier
-        print('min', amountNeeded, chemToMake, toMakeRecipe, amountMultiplier)
+        #print('min', amountNeeded, chemToMake, toMakeRecipe, amountMultiplier)
 
         r:int = 0
         if amountNeeded < toMakeRecipe.output.amount:
@@ -42,20 +42,20 @@ def generate(recipes:Dict[str,Recipe], cur:str, amount:int, made:DefaultDict[str
             usedFromBag = min(available, amountNeeded)
             amountNeeded -= usedFromBag
             extras[chemToMake.name] -= usedFromBag
-            print('-- used', usedFromBag, 'from bag')
+            #print('-- used', usedFromBag, 'from bag')
 
         if r > amountNeeded:
-            print('-- made an extra', chemToMake.name, (r-amountNeeded), r, amountNeeded)
+            #print('-- made an extra', chemToMake.name, (r-amountNeeded), r, amountNeeded)
             extras[chemToMake.name] += (r - amountNeeded)
 
         newMultiplier:int = r // toMakeRecipe.output.amount
 
-        print('min', r, newMultiplier)
+        #print('min', r, newMultiplier)
 
         return (r, newMultiplier)
 
     def get_min_amount_ore(chemToMake:Chemical, toMakeRecipe:Recipe, amountToMake:int) -> int:
-        print('ore', chemToMake, toMakeRecipe, amountToMake)
+        #print('ore', chemToMake, toMakeRecipe, amountToMake)
         if amountToMake < toMakeRecipe.output.amount:
             r = toMakeRecipe.output.amount * chemToMake.amount
         elif amountToMake % toMakeRecipe.output.amount == 0:
@@ -68,7 +68,6 @@ def generate(recipes:Dict[str,Recipe], cur:str, amount:int, made:DefaultDict[str
 
     print(' ' * depth, 'need to make', amount, 'of', cur, 'using', curRecipe)
 
-    depth += 1
     inputChem:Chemical = None
 
     if curRecipe.inputs[0].name == 'ORE':
@@ -78,15 +77,21 @@ def generate(recipes:Dict[str,Recipe], cur:str, amount:int, made:DefaultDict[str
         made['ORE'] += min_amount
         return
 
+    if amount % curRecipe.output.amount:
+        print('BAD', amount, curRecipe)
+        exit()
+    multiplier:int = amount // curRecipe.output.amount
+
     for inputChem in curRecipe.inputs:
         inputRecipe:Chemical = recipes[inputChem.name]
-        next_amts:int = get_min_amount(inputChem, inputRecipe, amount)
+        print(' ' * depth, 'get_min', inputChem, inputRecipe, amount, multiplier)
+        next_amts:int = get_min_amount(inputChem, inputRecipe, multiplier)
         print(' ' * depth, 'making', next_amts, 'of', inputChem.name, 'using', inputRecipe)
         made[inputChem.name] += next_amts[0]
         generate(recipes, inputChem.name, next_amts[0], made, extras, depth + 1)
 
 
-with open('14-test3.txt') as f:
+with open('14.txt') as f:
 
     recipes:Dict[str,Recipe] = {}
     ore_recipes:Dict[str,Recipe] = {}
@@ -119,27 +124,36 @@ with open('14-test3.txt') as f:
 
     chemName:str = None
     amtMade:int = None
-    for chemName, amtMade in extras.items():
-        if amtMade == 0: continue
-        if chemName[0:3] == 'ORE': continue
-        print('made', amtMade, 'too many of', chemName)
-        recipe = recipes[chemName]
-        if amtMade < recipe.output.amount:
-            print('  can\'t reduce')
-            continue
-        print('  recipe', recipe)
-        print('  can reduce')
-        reduced:int = 0
-        while amtMade >= recipe.output.amount:
-            #print('  reducing', recipe.output.amount, 'of', chemName)
-            amtMade -= recipe.output.amount
-            reduced += recipe.output.amount
-        print('  left with', amtMade, 'of', chemName, 'after reducing by', reduced)
-        extras[chemName] = amtMade
+    numReduced:int = 1
+    while numReduced > 0:
+        numReduced:int = 0
+        for chemName, amtMade in extras.items():
+            if amtMade == 0: continue
+            if chemName[0:3] == 'ORE': continue
+            print('made', amtMade, 'too many of', chemName)
+            recipe = recipes[chemName]
+            if amtMade < recipe.output.amount:
+                print('  can\'t reduce')
+                continue
+            numReduced += 1
+            print('  recipe', recipe)
+            print('  can reduce')
+            reduced:int = 0
+            while amtMade >= recipe.output.amount:
+                #print('  reducing', recipe.output.amount, 'of', chemName)
+                amtMade -= recipe.output.amount
+                reduced += recipe.output.amount
+            print('  left with', amtMade, 'of', chemName, 'after reducing by', reduced)
+            extras[chemName] = amtMade
 
-        if recipe.inputs[0].name == 'ORE':
-            oreReduction = (reduced // recipe.output.amount) * recipe.inputs[0].amount
-            print('  reducing ORE by', oreReduction)
-            made['ORE'] -= oreReduction
+            if recipe.inputs[0].name == 'ORE':
+                oreReduction = (reduced // recipe.output.amount) * recipe.inputs[0].amount
+                print('  reducing ORE by', oreReduction)
+                made['ORE'] -= oreReduction
+            else:
+                mult = reduced // recipe.output.amount
+                for i in recipe.inputs:
+                    print('  adding reduced', i, mult, i.amount * mult)
+                    extras[i.name] += i.amount * mult
 
     print('part1', made['ORE'])
