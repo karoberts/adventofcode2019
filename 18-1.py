@@ -85,13 +85,13 @@ def dijkstra(me, grid, _max):
     return keys
 
 # 5122 too high  cnkeoiqdjrtwbuzvyfhmalgsxp
+# 5090 too high  onkjciqdtzvyerwbuhfmaslgxp
+# 5088           nkojciqdtezvyrwbuhfmalgsxp  (not right answer)
 # first set [((33, 48), 'o', 16), ((45, 50), 'n', 28), ((3, 50), 'c', 88), ((55, 2), 'z', 104)]
 
 count = 0
-min_end = 5122
+min_end = 5088
 min_seq = None
-
-min_end = 5122
 
 def recur(me, grid, doors, _keys, _max, dist, seq):
     global count, min_end, min_seq
@@ -99,8 +99,12 @@ def recur(me, grid, doors, _keys, _max, dist, seq):
     #print(keys)
     #return
 
+    order = sorted(keys, key=lambda x:x[2])
+    if len(seq) == 0:
+       order = [keys[0], keys[2], keys[1], keys[3]]
+
     rets = []
-    for k in sorted(keys, key=lambda x:x[2]):
+    for k in order:
         door = k[1].upper()
         if count % 10000 == 0:
             print(count, 'trying', seq, k[1], dist, 'min', min_end, min_seq)
@@ -125,7 +129,7 @@ def recur(me, grid, doors, _keys, _max, dist, seq):
             if dist < min_end:
                 print('new min_end', dist, seq)
                 min_end = dist
-                min_end = seq
+                min_seq = seq
             elif dist == min_end:
                 print('another min_end', dist, seq)
             return dist
