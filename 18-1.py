@@ -196,6 +196,9 @@ def make_memo(_keys:dict, doors:dict, grid:dict, _max:tuple, me:tuple):
 # 4942           onkjiqdctzvyerwbuhfmaslgxp  (not right answer)
 # 4940           nkojiqdctzvyerwbuhfmaslgxp  (not right answer)
 # 4938           onkjiqdctwbuzvyerhfmaslgxp  ???
+# 4906           onjiqdkwbuctzvyerhfmaslgxp  ???
+# 4902           onjiqdctkwbuzvyerhfmaslgxp  ???
+# 4900           nojiqdctkwbuzvyerhfmaslgxp  !!!! right answer !!!!
 # first set [((33, 48), 'o', 16), ((45, 50), 'n', 28), ((3, 50), 'c', 88), ((55, 2), 'z', 104)]
 
 count = 0
