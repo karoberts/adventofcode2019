@@ -13,9 +13,6 @@ class Robot:
         self.orig_coord = coord
         self.memo = None
 
-    def __lt__(self, x):
-        return self.coord < x.coord
-
     def __repr__(self):
         return 'Bot[{}, @{}]'.format(self.id, self.coord)
 
@@ -34,118 +31,6 @@ def printg2(g, _max, bots:list):
                     print(' ', end='')
         print()
     print()
-
-def set_to_key(s):
-    return ''.join(sorted(s))
-
-def list_to_key(s):
-    return ''.join(s)
-
-def bots_to_key(bots):
-    return ''.join((str(p.coord) for p in bots))
-
-def dijkstra_nodes(bots, grid, _max, _keys, doors):
-    def get_neighbor_keys(bots, opendoors, foundkeys, foundkeylist):
-        possible = []
-        for bot in bots:
-            pt_id = '@' if bot.coord == bot.orig_coord else grid[bot.coord]
-            for k in _keys.keys():
-                if k == pt_id: continue
-                door = k.upper()
-                if door in opendoors: continue
-                m_k = (pt_id, k)
-                if m_k not in bot.memo: continue
-                info = bot.memo[m_k]
-                if len(info[2] - foundkeys) != 0: # if we cross a key we don't have yet, don't do this one
-                    continue
-                needed_doors = info[1]
-                if len(needed_doors - opendoors) == 0:
-                    #possible.append( (k, info[0]) )
-                    nopendoors = opendoors.copy()
-                    nopendoors.add(door)
-                    nfoundkeys = foundkeys.copy()
-                    nfoundkeys.add(k)
-                    nfoundkeylist = foundkeylist.copy()
-                    nfoundkeylist.append(k)
-                    nbots = copy.deepcopy(bots)
-                    nbots[bot.id].coord = _keys[k]
-                    possible.append( [info[0], nbots, nopendoors, nfoundkeys, nfoundkeylist, set_to_key(nfoundkeys) + bots_to_key(nbots) ] )
-
-        records = sorted(possible, key=lambda x:x[0])
-        return [x for _, x in zip(range(40), records)]
-
-    dist = defaultdict(lambda :999999999)
-
-    finder = {}
-    finder2 = {}
-
-    inq = set()
-    h = []
-    # 0  : how many keys left
-    # 1  : bots
-    # 2  : doors
-    # 3  : key set
-    # 4  : key list
-    # 5  : 'key' == keys
-    # 6  : valid
-    # 7  : dist
-    heapq.heappush(h, [len(_keys), bots, set(), set(), list(), ''+bots_to_key(bots), True, 0])
-    dist[h[0][5]] = 0
-    finder[h[0][5]] = h[0]
-    #finder2[me] = (set(), h[0])
-    inq.add(h[0][5])
-
-    max_found = 0
-    min_steps = 99999999
-
-    while len(h) > 0:
-        #print_map(dist);
-        u = heapq.heappop(h)
-        #print(len(u[5]) * ' ', 'at', u)
-        if not u[6]:
-            continue
-        inq.remove(u[5])
-        uk = u[5]
-        for v in get_neighbor_keys(u[1], u[2], u[3], u[4]):
-            #print(len(v[5]) * ' ', 'going to', v, 'steps', dist[uk] + v[0])
-            if len(v[4]) == len(_keys):
-                if dist[uk] + v[0] < min_steps:
-                    print(datetime.datetime.now(), 'found end! at', v[1], dist[uk] + v[0], 'steps', v[5])
-                    min_steps = dist[uk] + v[0]
-                continue
-            alt = dist[uk] + v[0]
-            if alt > min_steps:
-                continue
-            if alt < dist[v[5]]:
-                dist[v[5]] = alt
-                entry = [len(_keys) - len(v[5]), v[1], v[2], v[3], v[4], v[5], True, alt]
-                if v[5] in inq:
-                    finder[v[5]][6] = False
-
-                """
-                other = None if v[1] not in finder2 else finder2[v[1]]
-                if other and other[0] == v[3] and other[1][7] > alt: # other path with same keys to same position (diff order)
-                    if v[5] in finder:
-                        finder[v[5]][6] = False
-                """
-
-                inq.add(v[5])
-                finder[v[5]] = entry
-                #finder2[v[1]] = (v[3], entry)
-
-                """
-                if len(v[4]) > max_found:
-                    print('so far', v[5], len(v[4]), 'of', len(_keys))
-                    max_found = len(v[4])
-                """
-
-                heapq.heappush(h, entry)
-            #else:
-            #   print(len(v[5]) * ' ', 'skip', v)
-        
-    #print(dist)
-
-    return min_steps
 
 def memo_dijkstra_finddoors(k1:tuple, k2:tuple, grid:dict, _max:tuple):
     tests = [ (1, 0), (-1, 0), (0, -1), (0, 1) ]
@@ -323,8 +208,6 @@ def recur_memo(bots, grid, doors, _keys, _max, dist, opendoors, foundkeys, depth
 
 # 2774 - too high
 # 2682 - too high
-# 2494 - too high
-# 2462 - !!!!
 
 with open('18-2.txt') as f:
     grid = dict()
@@ -361,8 +244,7 @@ with open('18-2.txt') as f:
     print(doors)
     print(len(_keys), _keys)
 
-    #ret = recur_memo(bots, grid.copy(), doors, _keys, _max, 0, set(), set(), 0)
-    ret = dijkstra_nodes(bots, grid, _max, _keys, doors)
-    print('part2', ret)
+    ret = recur_memo(bots, grid.copy(), doors, _keys, _max, 0, set(), set(), 0)
+    print('part2', min_end)
 
     exit()
