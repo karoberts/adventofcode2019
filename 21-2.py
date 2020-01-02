@@ -101,45 +101,20 @@ def ascii2cmd(s:str) -> list:
 
 # jumps move forward 4 spaces
 """
-@
-#
 
-11111 #####     RUN
-11110 ####.     JUMP
-11101 ###.#     RUN
-11100 ###..     RUN
-11011 ##.##     JUMP
-11010 ##.#.     JUMP
-11001 ##..#     RUN
-11000 ##...     RUN
-10111 #.###     JUMP
-10110 #.##.     JUMP
-10101 #.#.#     RUN
-10100 #.#..     RUN
-10011 #..##     JUMP
-10010 #..#.     JUMP
-10001 #...#     RUN
-10000 #....     RUN
-01111 .####     -
-01110 .###-     -
-01101 .##.#     -
-01100 .##..     -
-01011 .#.##     JUMP
-01010 .#.#.     JUMP
-01001 .#..#     -
-01000 .#...     -
-00111 ..###     JUMP
-00110 ..##.     JUMP
-00101 ..#.#     -
-00100 ..#..     -
-00011 ...##     JUMP
-00010 ...#.     JUMP
-00001 ....#     -
-00000 .....     -
+ ABCDEFGHI
 
-!D, RUN
+@...#
+@___#...
+@___#...
+@.__#
+@##.#.
+
+(!C and D and !E)
 OR
-(A & B & C & D & E), RUN
+(!A or !B)
+OR
+!(A OR B OR C)
 
 """
 
@@ -151,15 +126,35 @@ with open('21.txt') as f:
         i += 1
 
     cmds = [ 
+        'NOT C T',
+        'AND D T',
+        'NOT E J',
+        'AND T J',
+
+        'NOT A T',
+        'OR T J',
+        'NOT B T',
+        'OR T J',
+
+        'OR A T',
+        'OR B T',
+        'OR C T',
+        'NOT T T',
+        'OR T J'
+
+        #end
+    ]
+    """
         'NOT T T', 
         'AND A T',
         'AND B T',
         'AND C T', 
         'AND D T', 
-        'AND E T', 
+        #'AND E T', 
         'NOT D J', 
         'OR T J', 
         'NOT J J' ]
+        """
     cmds += ['RUN']
 
     inp = []
