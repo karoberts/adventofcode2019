@@ -104,17 +104,34 @@ def ascii2cmd(s:str) -> list:
 
  ABCDEFGHI
 
-@...#
-@___#...
-@___#...
-@.__#
-@##.#.
+NOJUMP
+ ABCDEFGHI
+@####.#.#.##.####
+@####.##..#.#####
+@####..#.###..###
+@####..###.#..###
 
-(!C and D and !E)
+JUMP
+ ABCDEFGHI
+@##.#...#.#.###
+@##.#.#.##.####
+@##.##..#.#####
+@#..#.####
+@#..#.###..###
+@#.##.#.##.###
+@##.#..###
+
+ ABCDEFGHI
+
+ ABCDEFGHI
+@---#---#
+
+(D and H AND !(C AND B) )
 OR
-(!A or !B)
+!(E OR F) AND H // OR G)
 OR
-!(A OR B OR C)
+!A
+
 
 """
 
@@ -126,35 +143,23 @@ with open('21.txt') as f:
         i += 1
 
     cmds = [ 
-        'NOT C T',
+        'OR C T',
+        'AND B T',
+        'NOT T T',
         'AND D T',
-        'NOT E J',
-        'AND T J',
+        'AND H T',
+
+        'OR E J',
+        'OR F J',
+        'NOT J J',
+        'AND H J',
+        
+        'OR T J',
 
         'NOT A T',
         'OR T J',
-        'NOT B T',
-        'OR T J',
-
-        'OR A T',
-        'OR B T',
-        'OR C T',
-        'NOT T T',
-        'OR T J'
-
-        #end
     ]
-    """
-        'NOT T T', 
-        'AND A T',
-        'AND B T',
-        'AND C T', 
-        'AND D T', 
-        #'AND E T', 
-        'NOT D J', 
-        'OR T J', 
-        'NOT J J' ]
-        """
+
     cmds += ['RUN']
 
     inp = []
