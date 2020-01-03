@@ -120,8 +120,10 @@ JUMP
 @#..#.###..###
 @#.##.#.##.###
 @##.#..###
-
+ 012345678
  ABCDEFGHI
+
+ ##.##...#
 
  ABCDEFGHI
 @---#---#
@@ -135,6 +137,85 @@ OR
 
 """
 
+def bits_to_bot(b) -> str:
+    return ''.join( ('#' if x == 1 else '.' for x in b) )
+
+def play(b, p, act):
+    r = None
+    if act == 'J':
+        p += 4
+        if p > 8:
+            return True
+        if b[p] == '.':
+            return False
+    elif act == 'R':
+        p += 1
+        if p > 8:
+            return True
+        if b[p] == '.':
+            return False
+
+    r1 = play(b, p, 'R')
+    r2 = play(b, p, 'J')
+
+    return r1 or r2
+
+_mR = []
+_mJ = []
+_d = []
+_e = []
+for i in range(0, 2**9):
+    bits = [int(x) for x in format(i, '09b')]
+    s = bits_to_bot(bits)
+
+    rJ = play(s, -1, 'J')
+    rR = play(s, -1, 'R')
+    if rJ and not rR: _mJ.append(s)
+    elif rR and not rJ: _mR.append(s)
+    elif not rJ and not rR: _d.append(s)
+    elif rJ and rR: _e.append(s)
+
+print('dead', len(_d))
+print('must_jump', len(_mJ))
+print('must_run', len(_mR))
+print('either', len(_e))
+
+"""
+ABCDEFGHI
+##.#.#.##
+
+!A
+OR
+(D AND H)
+"""
+
+print('   @   @ ')
+print('ABCDEFGHI')
+print('012345678')
+for s in sorted(_mJ):
+    if s[0] == '.': continue
+    elif s[3] == '#' and s[7] == '#': continue
+    #if s[0] == '#' and s[3] == '#' and s[4] == '.' and s[7] == '#': print('2',s)
+    #if s[0] == '#' and s[3] == '#' and s[4] == '#' and s[7] == '#' and s[8] == '.': print('3',s)
+    print(s)
+
+for s in _mR:
+    if s[0] == '.': print('1',s)
+    elif s[3] == '#' and s[7] == '#': print('2',s)
+
+s = '####.#.#.'
+r1 = play(s, -1, 'J')
+print(r1)
+
+#exit()
+
+"""
+!(A and B and C)
+and D
+and H
+
+"""
+
 with open('21.txt') as f:
     ops = defaultdict(lambda:0)
     i = 0
@@ -143,21 +224,15 @@ with open('21.txt') as f:
         i += 1
 
     cmds = [ 
-        'OR C T',
+        'OR A T',
         'AND B T',
+        'AND C T',
+        'NOT T J',
+        'AND D J',
+        'NOT H T',
         'NOT T T',
-        'AND D T',
-        'AND H T',
-
-        'OR E J',
-        'OR F J',
-        'NOT J J',
-        'AND H J',
-        
-        'OR T J',
-
-        'NOT A T',
-        'OR T J',
+        'OR E T',
+        'AND T J',
     ]
 
     cmds += ['RUN']
