@@ -39,7 +39,8 @@ with open('22.txt') as f:
     #stack = [x for x in range(0, 10)]
 
     for op in ops:
-        print(op, len(stack))
+        print(stack.index(2019))
+        #print(op, len(stack))
         if op[0] == 'DEAL':
             stack = deal(stack)
         elif op[0] == 'CUT':

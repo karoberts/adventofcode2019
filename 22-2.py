@@ -39,31 +39,97 @@ def incr_p(c, i, lenstack):
     pos = c * i
     mod = pos % lenstack
     return mod
+    
+# modpow the polynomial: (ax+b)^m % n
+# f(x) = ax+b
+# g(x) = cx+d
+# f^2(x) = a(ax+b)+b = aax + ab+b
+# f(g(x)) = a(cx+d)+b = acx + ad+b
+def polypow(a,b,m,n):
+    if m==0:
+        return 1,0
+    if m%2==0:
+        return polypow(a*a%n, (a*b+b)%n, m//2, n)
+    else:
+        c,d = polypow(a,b,m-1,n)
+        return a*c%n, (a*d+b)%n
+
+tot = 101741582076661
+lenstack = 119315717514047
+card = 2020
 
 with open('22.txt') as f:
-    ops = []
+    ops = [l.strip() for l in f.readlines()]
 
-    for x in (l.strip() for l in f.readlines()):
+    #https://stackoverflow.com/questions/4798654/modular-multiplicative-inverse-function-in-python
+    # modinv(x, p)
+    # y = pow(x, p-2, p)
+
+    a = 1
+    b = 0
+    for x in reversed(ops):
         if x == 'deal into new stack':
-            ops.append(('DEAL', 0))
+            #print('deal();')
+            #ops.append(('DEAL', 0))
+            a = -a
+            b = lenstack - b - 1
         elif x.startswith('deal with increment'):
-            ops.append(('INCR', int(x[len('deal with increment '):])))
+            #print('incr({});'.format(int(x[len('deal with increment '):])))
+            #ops.append(('INCR', int(x[len('deal with increment '):])))
+            i = int(x[len('deal with increment '):])
+            z = pow(i, lenstack - 2, lenstack)
+            a = (a*z) % lenstack
+            b = (b*z) % lenstack
         else:
-            ops.append(('CUT', int(x[len('cut '):])))
+            #print('cut({});'.format(int(x[len('cut '):])))
+            #ops.append(('CUT', int(x[len('cut '):])))
+            c = int(x[len('cut '):])
+            b = (b+c) % lenstack
 
-    lenstack = 119315717514047
-    card = 2020
+    print(a,b)
+    #print( pow(a*2020 + b, 2, lenstack) )
+    a,b = polypow(a,b, tot, lenstack)
 
-    tot = 101741582076661
-    for c in range(0, 10000):
-        print(card)
+    print('ans=', (card*a+b)%lenstack)
+
+    lenstack = 10007
+    a = 1
+    b = 0
+    for x in reversed(ops):
+        if x == 'deal into new stack':
+            #print('deal();')
+            #ops.append(('DEAL', 0))
+            a = -a
+            b = lenstack - b - 1
+        elif x.startswith('deal with increment'):
+            #print('incr({});'.format(int(x[len('deal with increment '):])))
+            #ops.append(('INCR', int(x[len('deal with increment '):])))
+            i = int(x[len('deal with increment '):])
+            z = pow(i, lenstack - 2, lenstack)
+            a = (a*z) % lenstack
+            b = (b*z) % lenstack
+        else:
+            #print('cut({});'.format(int(x[len('cut '):])))
+            #ops.append(('CUT', int(x[len('cut '):])))
+            c = int(x[len('cut '):])
+            b = (b+c) % lenstack
+    print((a*2019+b) % lenstack)
+    a,b = polypow(a,b, 1, 10007)
+    print(a,b)
+    print('p1=', (1538*a+b)%lenstack)
+
+    exit()
+
+    for c in range(0, 3):
+        print('calc', card)
         for op in ops:
-            #print(op, card)
             if op[0] == 'DEAL':
                 card = deal_p(card, lenstack)
             elif op[0] == 'CUT':
                 card = cut_p(card, op[1], lenstack)
             else:
                 card = incr_p(card, op[1], lenstack)
+
+    exit()
 
     print(card)
