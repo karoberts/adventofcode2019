@@ -136,7 +136,8 @@ def _next(d, dir):
     return (d[0] + n[0], d[1] + n[1])
 
 def done():
-    printg(grid, d, _min, _max, deadends, oxy)
+    printg(grid, (0,0), _min, _max, deadends, oxy)
+    print('now count manually!')
     exit()
 
 with open('15.txt') as f:

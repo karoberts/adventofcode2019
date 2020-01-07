@@ -21,13 +21,13 @@ with open('06.txt') as f:
         #nodes[o[0]].append(o[1])
         nodes2[o[1]] = o[0]
 
-    print(nodes2)
+    #print(nodes2)
 
     you_path = recur2('YOU', nodes2)
     san_path = recur2('SAN', nodes2)
 
-    print('you', you_path)
-    print('san', san_path)
+    #print('you', you_path)
+    #print('san', san_path)
 
     yp = len(you_path) - 1
     sp = len(san_path) - 1

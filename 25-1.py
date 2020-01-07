@@ -141,6 +141,8 @@ items = defaultdict(set)
 oppo = {'n':'s', 's':'n', 'e':'w', 'w':'e'}
 chain = []
 
+print('go get "astronaut ice cream", "space heater", "klein bottle", and "asterisk"')
+
 with open('25.txt') as f:
     ops = defaultdict(lambda:0)
     i = 0

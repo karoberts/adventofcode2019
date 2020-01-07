@@ -1,3 +1,4 @@
+import platform
 import re
 import sys
 import json
@@ -29,9 +30,16 @@ with open('08.txt') as f:
                 if cur == 2: img[(x,y)] = p
 
     pixels = {0: ' ', 1: '*'}
+    block = bytes([0xE2,0x96, 0x88])
     for y in range(0, h):
         for x in range(0, w):
-            print(pixels[img[(x,y)]], end='')
+            if pixels[img[(x,y)]] == '*':
+                if platform.python_implementation() == 'PyPy':
+                    print('*', end='')
+                else:
+                    print('\u2588', end='')
+            else:
+                print(' ', end='')
         print()
 
 

@@ -1,3 +1,4 @@
+import platform
 import re
 import sys
 import json
@@ -141,6 +142,10 @@ with open('11.txt') as f:
 
     for y in range(_min[1], _max[1] + 1):
         for x in range(_min[0], _max[0] + 1):
-            if grid[(x,y)] == 1: print ('*', end='')
+            if grid[(x,y)] == 1:
+                if platform.python_implementation() == 'PyPy':
+                    print('*', end='')
+                else:
+                    print('\u2588', end='')
             else: print(' ', end='')
         print()

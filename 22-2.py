@@ -113,10 +113,10 @@ with open('22.txt') as f:
             #ops.append(('CUT', int(x[len('cut '):])))
             c = int(x[len('cut '):])
             b = (b+c) % lenstack
-    print((a*2019+b) % lenstack)
-    a,b = polypow(a,b, 1, 10007)
-    print(a,b)
-    print('p1=', (1538*a+b)%lenstack)
+    #print((a*2019+b) % lenstack)
+    #a,b = polypow(a,b, 1, 10007)
+    #print(a,b)
+    #print('p1=', (1538*a+b)%lenstack)
 
     exit()
 
