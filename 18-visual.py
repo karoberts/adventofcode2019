@@ -141,7 +141,7 @@ def memo_dijkstra_finddoors(k1:tuple, k2:tuple, grid:dict, _max:tuple):
             tk = (tx, ty)
             tt = grid[tk]
 
-            if tt == '.':
+            if tt == '.' or tt == '_':
                 ns.append( [1, tx, ty, tk, '.'] )
             if tt in 'abcdefghijklmnopqrstuvwxyz':
                 ns.append( [1, tx, ty, tk, 'k'] )
@@ -250,36 +250,25 @@ def get_keys(pt_id, _keys, memo, opendoors, foundkeys):
     records = sorted(possible, key=lambda x:x[1])
     return [x for _, x in zip(range(4), records)]
 
-block = bytes([0xE2,0x96, 0x88])
-def printg_curses(stdscr, g, _max, me, doors, _keys, gotkeys):
-    stdscr.erase()
-    for y in range(0, _max[1] + 1):
-        for x in range(0, _max[0] + 1):
-            c = (x,y)
-            sc_y = y
-            sc_x = x
-            try:
-                if c == me:
-                    stdscr.insstr(sc_y, sc_x, block, curses.color_pair(1))
-                elif c in doors:
-                    stdscr.insstr(sc_y, sc_x, doors[c], curses.color_pair(2))
-                elif c in _keys:
-                    if _keys[c] in gotkeys:
-                        stdscr.insstr(sc_y, sc_x, _keys[c], curses.color_pair(1))
-                    else:
-                        stdscr.insstr(sc_y, sc_x, _keys[c], curses.color_pair(4))
-                elif c in g:
-                    if g[c] == '#':
-                        stdscr.insstr(sc_y, sc_x, block, curses.color_pair(0))
-                    elif g[c] == '.':
-                        stdscr.insstr(sc_y, sc_x, block, curses.color_pair(3) | curses.A_DIM)
-                    elif g[c] == '-':
-                        stdscr.insstr(sc_y, sc_x, block, curses.color_pair(2) | curses.A_DIM)
-                else:
-                    stdscr.insch(sc_y, sc_x, ' ')
-            except (curses.error):
-                pass
-    stdscr.refresh()
+def map_visible(grid:dict, pos:tuple, visible:set):
+    tests = [ (1, 0), (-1, 0), (0, -1), (0, 1) ]
+
+    q = [pos]
+    while len(q) > 0:
+        pos = q.pop()
+
+        for t in tests:
+            tk = (pos[0] + t[0], pos[1] + t[1])
+            tt = grid[tk]
+
+            if tk in visible:
+                continue
+
+            if tt == '.':
+                visible.add(tk)
+                q.append(tk)
+            if tt in 'abcdefghijklmnopqrstuvwxyz':
+                q.append(tk)
 
 def main(stdscr):
 
@@ -287,10 +276,77 @@ def main(stdscr):
     curses.curs_set(0)
     stdscr.refresh()
 
-    curses.init_pair(1, curses.COLOR_RED, curses.COLOR_BLACK)
-    curses.init_pair(2, curses.COLOR_CYAN, curses.COLOR_BLACK)
-    curses.init_pair(3, curses.COLOR_WHITE, curses.COLOR_BLACK)
-    curses.init_pair(4, curses.COLOR_YELLOW, curses.COLOR_BLACK)
+    COLOR_BLACK_WHITE = 0
+    COLOR_RED_BLACK = 1
+    COLOR_CYAN_BLACK = 2
+    COLOR_WHITE_BLACK = 3
+    COLOR_YELLOW_BLACK = 4
+    COLOR_GREEN_BLACK = 5
+    COLOR_BLACK_YELLOW = 6
+    COLOR_BLACK_CYAN = 7
+
+    curses.init_pair(COLOR_RED_BLACK, curses.COLOR_RED, curses.COLOR_BLACK)
+    curses.init_pair(COLOR_CYAN_BLACK, curses.COLOR_CYAN, curses.COLOR_BLACK)
+    curses.init_pair(COLOR_WHITE_BLACK, curses.COLOR_WHITE, curses.COLOR_BLACK)
+    curses.init_pair(COLOR_YELLOW_BLACK, curses.COLOR_YELLOW, curses.COLOR_BLACK)
+    curses.init_pair(COLOR_GREEN_BLACK, curses.COLOR_GREEN, curses.COLOR_BLACK)
+    curses.init_pair(COLOR_BLACK_YELLOW, curses.COLOR_BLACK, curses.COLOR_YELLOW)
+    curses.init_pair(COLOR_BLACK_CYAN, curses.COLOR_BLACK, curses.COLOR_CYAN)
+
+    COLOR_DEVICE = curses.color_pair(COLOR_RED_BLACK)
+    COLOR_WALLS = curses.color_pair(COLOR_BLACK_WHITE)
+    COLOR_DOORS = curses.color_pair(COLOR_BLACK_YELLOW)
+    COLOR_KEYS_HAVE = curses.color_pair(COLOR_BLACK_CYAN)
+    COLOR_KEYS_NEED = curses.color_pair(COLOR_YELLOW_BLACK)
+    COLOR_VISITED = curses.color_pair(COLOR_CYAN_BLACK) | curses.A_DIM
+    COLOR_VISIBLE = curses.color_pair(COLOR_GREEN_BLACK) | curses.A_DIM
+    COLOR_FLOOR = curses.color_pair(COLOR_WHITE_BLACK) | curses.A_DIM
+
+    block = bytes([0xE2,0x96, 0x88])
+    def printg_curses(stdscr, g, _max, me, doors, _keys, gotkeys, visited:set, visible:set, steps:int):
+        stdscr.erase()
+        for y in range(0, _max[1] + 1):
+            for x in range(0, _max[0] + 1):
+                c = (x,y)
+                sc_y = y
+                sc_x = x
+                try:
+                    if c == me:
+                        stdscr.insstr(sc_y, sc_x, block, COLOR_DEVICE)
+                    elif c in doors:
+                        stdscr.insstr(sc_y, sc_x, doors[c], COLOR_DOORS)
+                    elif c in _keys:
+                        if _keys[c] in gotkeys:
+                            stdscr.insstr(sc_y, sc_x, _keys[c], COLOR_KEYS_HAVE)
+                        else:
+                            stdscr.insstr(sc_y, sc_x, _keys[c], COLOR_KEYS_NEED)
+                    elif c in visited:
+                        stdscr.insstr(sc_y, sc_x, block, COLOR_VISITED)
+                    elif c in visible:
+                        stdscr.insstr(sc_y, sc_x, block, COLOR_VISIBLE)
+                    elif c in g:
+                        if g[c] == '#':
+                            stdscr.insstr(sc_y, sc_x, block, COLOR_WALLS)
+                        elif g[c] == '.':
+                            stdscr.insstr(sc_y, sc_x, block, COLOR_FLOOR)
+                    else:
+                        stdscr.insch(sc_y, sc_x, ' ')
+                except (curses.error):
+                    pass
+        try:
+            stdscr.addstr(2, _max[0] + 5, 'Steps: {}'.format(steps))
+            stdscr.addstr(3, _max[0] + 5, 'Keys : ')
+            xpos = _max[0] + 5 + 7
+            for k in 'abcdefghijklmnopqrstuvwxyz':
+                if k in gotkeys:
+                    stdscr.addstr(3, xpos, k, curses.color_pair(COLOR_CYAN_BLACK))
+                else:
+                    stdscr.addstr(3, xpos, k)
+                stdscr.addstr(3, xpos + 1, ' ')
+                xpos += 2
+        except (curses.error):
+            pass
+        stdscr.refresh()
 
     with open('18.txt') as f:
         grid = dict()
@@ -316,7 +372,11 @@ def main(stdscr):
             y += 1
         _max = (x,y)
 
-        printg_curses(stdscr, grid, _max, me, rdoors, r_keys, dict())
+        visible = set()
+        visited = set()
+        map_visible(grid, me, visible)
+
+        printg_curses(stdscr, grid, _max, me, rdoors, r_keys, dict(), visited, visible, 0)
 
         ret = ['n', 'o', 'j', 'i', 'q', 'd', 't', 'c', 'k', 'w', 'u', 'b', 'z', 'v', 'y', 'e', 'r', 'f', 'h', 'm', 'a', 's', 'l', 'g', 'x', 'p']
 
@@ -324,19 +384,27 @@ def main(stdscr):
         time.sleep(1.0)
 
         last_k = '@'
-        last_pos = me
         gotkeys = set()
+        steps = 0
         for k in ret:
             prev = memo[(last_k, k)][3]
             for p in reversed(prev):
-                grid[p] = '-'
-                printg_curses(stdscr, grid, _max, p, rdoors, r_keys, gotkeys)
+                visited.add(p)
+                printg_curses(stdscr, grid, _max, p, rdoors, r_keys, gotkeys, visited, visible, steps)
+                me = p
+                steps += 1
+            steps -= 1
             #time.sleep(0.0001)
             gotkeys.add(k)
             rdoors.pop( doors[k.upper()] ) 
             grid[doors[k.upper()]] = '.'
+            visible.clear()
+            map_visible(grid, p, visible)
             last_k = k
+            printg_curses(stdscr, grid, _max, p, rdoors, r_keys, gotkeys, visited, visible, steps)
+            #stdscr.getch()
 
+        printg_curses(stdscr, grid, _max, me, rdoors, r_keys, gotkeys, visited, visible, steps)
         stdscr.getch()
 
 wrapper(main)
