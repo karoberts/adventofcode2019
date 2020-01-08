@@ -213,21 +213,19 @@ def memo_dijkstra_finddoors(k1:tuple, k2:tuple, grid:dict, _max:tuple):
 
     return (dist[k2], crossed_doors, crossed_keys, path)
 
-def make_memo(_keys:dict, doors:dict, grid:dict, _max:tuple, me:tuple):
+def make_memo(_keys:dict, doors:dict, grid:dict, _max:tuple, me:tuple, ret:list):
     memo = dict()
 
     #print(doors)
-    for k in _keys.keys():
-        for k2 in _keys.keys():
-            if k == k2: continue
-            r = memo_dijkstra_finddoors(_keys[k], _keys[k2], grid, _max)
-            #print(k, 'to', k2, r)
-            memo[(k, k2)] = r
+    for i in range(0, len(ret) - 1):
+        k = ret[i]
+        k2 = ret[i + 1]
+        r = memo_dijkstra_finddoors(_keys[k], _keys[k2], grid, _max)
+        #print(k, 'to', k2, r)
+        memo[(k, k2)] = r
     #printg2(g, _max, None)
 
-    for k in _keys.keys():
-        r = memo_dijkstra_finddoors(me, _keys[k], grid, _max)
-        memo[('@', k)] = r
+    memo[('@', ret[0])] = memo_dijkstra_finddoors(me, _keys[ret[0]], grid, _max)
 
     #print(memo)
 
@@ -320,26 +318,25 @@ def main(stdscr):
 
         printg_curses(stdscr, grid, _max, me, rdoors, r_keys, dict())
 
-        memo = make_memo(_keys, doors, grid, _max, me)
-
         ret = ['n', 'o', 'j', 'i', 'q', 'd', 't', 'c', 'k', 'w', 'u', 'b', 'z', 'v', 'y', 'e', 'r', 'f', 'h', 'm', 'a', 's', 'l', 'g', 'x', 'p']
+
+        memo = make_memo(_keys, doors, grid, _max, me, ret)
+        time.sleep(1.0)
 
         last_k = '@'
         last_pos = me
         gotkeys = set()
-        steps = 0
         for k in ret:
             prev = memo[(last_k, k)][3]
             for p in reversed(prev):
                 grid[p] = '-'
                 printg_curses(stdscr, grid, _max, p, rdoors, r_keys, gotkeys)
-            time.sleep(0.0001)
+            #time.sleep(0.0001)
             gotkeys.add(k)
             rdoors.pop( doors[k.upper()] ) 
             grid[doors[k.upper()]] = '.'
             last_k = k
 
-        print(steps)
         stdscr.getch()
 
 wrapper(main)
