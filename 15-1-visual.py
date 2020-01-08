@@ -3,6 +3,7 @@ import sys
 import json
 import itertools
 import curses
+import time
 from curses import wrapper
 from collections import defaultdict
 sys.setrecursionlimit(5000)
@@ -98,42 +99,21 @@ def run_prog(ops, ctx, inp):
         if inc_p:
             ctx['p'] += ops_size[opcode]
 
-def printg(g, d, _min, _max, deadends, oxy):
-    print('grid', 'd=', d)
-    for y in range(_min[1], _max[1] + 1):
-        for x in range(_min[0], _max[0] + 1):
-            c = (x,y)
-            if c == (0,0):
-                print('S', end='')
-            elif c == oxy:
-                print('!', end='')
-            elif c == d:
-                print('D', end='')
-            elif c in deadends:
-                print('-', end='')
-            elif c in g:
-                print(g[c], end='')
-            else:
-                print(' ', end='')
-        print()
-    print()
-
 block = bytes([0xE2,0x96, 0x88])
 def printg_curses(stdscr, g, d, _min, _max, deadends, oxy):
-    #print('grid', 'd=', d)
     sc_y = 1
     sc_x = 1
     stdscr.erase()
-    for y in range(_min[1], _max[1] + 1):
-        for x in range(_min[0], _max[0] + 1):
+    for y in range(_min[1] - 1, _max[1] + 2):
+        for x in range(_min[0] - 1, _max[0] + 2):
             c = (x,y)
             try:
                 if c == oxy:
-                    stdscr.insch(sc_y, sc_x, 'o')
+                    stdscr.insch(sc_y, sc_x, 'o', curses.color_pair(4) | curses.A_BOLD)
                 elif c == d:
-                    stdscr.insch(sc_y, sc_x, 'D')
+                    stdscr.insstr(sc_y, sc_x, block, curses.color_pair(1))
                 elif c in deadends:
-                    stdscr.insstr(sc_y, sc_x, block, curses.color_pair(2))
+                    stdscr.insstr(sc_y, sc_x, block, curses.color_pair(2) | curses.A_DIM)
                 elif c in g:
                     if g[c] == '#':
                         stdscr.insstr(sc_y, sc_x, block, curses.color_pair(0))
@@ -147,6 +127,7 @@ def printg_curses(stdscr, g, d, _min, _max, deadends, oxy):
         sc_x = 1
         sc_y += 1
     stdscr.refresh()
+    #time.sleep(0.01)
 
 NORTH = 1
 SOUTH = 2
@@ -157,25 +138,27 @@ HITWALL = 0
 MOVED = 1
 ATOXY = 2
 
-dirname = {NORTH:'NORTH',SOUTH:'SOUTH',WEST:'WEST',EAST:'EAST'}
-retname = {HITWALL:'WALL',MOVED:'OPEN',ATOXY:'OXY'}
-intended = {NORTH:(0,-1), SOUTH:(0,1), WEST:(-1,0),EAST:(1,0)}
 oppo = {NORTH:SOUTH, WEST:EAST, EAST:WEST, SOUTH:NORTH}
 nextdir = {NORTH:WEST, WEST:SOUTH, SOUTH:EAST, EAST:NORTH}
 
+xy_delta_map = {NORTH:(0,-1), SOUTH:(0,1), WEST:(-1,0),EAST:(1,0)}
+dirs_to_try = {NORTH: [NORTH, EAST, SOUTH, WEST], EAST: [EAST, SOUTH, WEST, NORTH], SOUTH: [SOUTH, WEST, NORTH, EAST], WEST: [WEST, NORTH, EAST, SOUTH]}
+
 def _next(d, dir):
-    n = intended[dir]
+    n = xy_delta_map[dir]
     return (d[0] + n[0], d[1] + n[1])
 
 def main(stdscr):
 
     # Clear screen
     stdscr.clear()
+    curses.curs_set(0)
     stdscr.refresh()
 
     curses.init_pair(1, curses.COLOR_RED, curses.COLOR_BLACK)
     curses.init_pair(2, curses.COLOR_CYAN, curses.COLOR_BLACK)
     curses.init_pair(3, curses.COLOR_WHITE, curses.COLOR_BLACK)
+    curses.init_pair(4, curses.COLOR_YELLOW, curses.COLOR_BLACK)
 
     ops = defaultdict(lambda:0)
     with open('15.txt') as f:
@@ -193,99 +176,70 @@ def main(stdscr):
     deadends = set()
     _min = [0,0]
     _max = [0,0]
-    d = (0,0)
-    oxy = None
-    grid[d] = '.'
-    for i in range(0, 50000):
+    d_pos = (0,0)
+    oxy_pos = None
+    grid[d_pos] = '.'
+
+    while dir is not None:
         r = run_prog(ops, ctx, inp)
-        #print('D', d)
-        #print('GOING', dirname[dir], 'ret', retname[r])
 
-        n = intended[dir]
-        nsp = (d[0] + n[0], d[1] + n[1])
+        new_pos = _next(d_pos, dir)
         if r == HITWALL:
-            grid[nsp] = '#'
-            ndir = dir
-            walls = set()
-            for i in range(0, 8):
-                ndir = nextdir[ndir]
-                g = grid[_next(d,ndir)]
-                #print('  trying', dirname[ndir], 'found', g, 'i=', i)
-                if g == '#':
-                    walls.add(ndir)
-                if g == ' ':
-                    break
-                if g == '.' and i > 3:
-                    break
-                #print('    continue')
-            if len(walls) == 3:
-                #print('dead end at', d)
-                deadends.add(d)
-                grid[d] = '#'
-            #print('chose', dirname[ndir])
-            dir = ndir
-            inp.append(dir)
-        elif r == MOVED or r == ATOXY:
-            d = nsp
-            if r == ATOXY:
-                oxy = nsp
-            grid[d] = '.'
-            g = grid[_next(d,dir)]
-            if g == '.' or g == '#':
-                #print('next is known')
-                ndir = dir
-                for i in range(0, 3):
-                    ndir = nextdir[ndir]
-                    g = grid[_next(d,ndir)]
-                    #print('  trying', dirname[ndir], 'found', g, 'i=', i)
-                    if g == ' ':
-                        break
-                    if g == '.' and i > 3:
-                        break
-                    #print('    continue')
-                #print('chose', dirname[ndir])
-                dir = ndir
-            else:
-                # find what is around
-                for i in range(1,4+1):
-                    g = grid[_next(d,i)]
-                    if g == ' ':
-                        #print('=> looking', dirname[i])
-                        inp.append(i)
-                        r = run_prog(ops, ctx, inp)
-                        #print('=> got', retname[r])
-                        if r == HITWALL:
-                            grid[_next(d,i)] = '#'
-                        elif r == MOVED or r == ATOXY:
-                            #grid[_next(d,i)] = '.'
-                            nsp = _next(d,i)
-                            if r == ATOXY:
-                                oxy = nsp
-                            dir = i
-                            inp.append(oppo[i])
-                            r = run_prog(ops, ctx, inp)
-                            break
-                        elif r == ATOXY:
-                            oxy = _next(d,i)
-                            #print('oxygen', oxy)
-                            done()
-            inp.append(dir)
-        """
+            grid[new_pos] = '#'
+        elif r == MOVED:
+            grid[new_pos] = '.'
+            d_pos = new_pos
         elif r == ATOXY:
-            oxy = nsp
-            print('oxygen', nsp)
-            break
-        """
+            oxy_pos = new_pos
+            grid[new_pos] = 'o'
+            d_pos = new_pos
 
-        if nsp[0] < _min[0]: _min[0] = nsp[0]
-        if nsp[1] < _min[1]: _min[1] = nsp[1]
-        if nsp[0] > _max[0]: _max[0] = nsp[0]
-        if nsp[1] > _max[1]: _max[1] = nsp[1]
+        opts = {}
+        for next_dir in dirs_to_try[dir]:
+            next_pos = _next(d_pos, next_dir)
+            opts[next_dir] = grid[next_pos]
+            if opts[next_dir] == ' ':
+                inp.append(next_dir)
+                r = run_prog(ops, ctx, inp)
+                if r == HITWALL:
+                    grid[next_pos] = '#'
+                else:
+                    inp.append(oppo[next_dir])
+                    run_prog(ops, ctx, inp)
 
-        printg_curses(stdscr, grid, d, _min, _max, deadends, oxy)
-        #input('next')
+        for next_dir in dirs_to_try[dir]:
+            if opts[next_dir] == ' ':
+                dir = next_dir
+                break
+        else:
+            for next_dir in dirs_to_try[dir]:
+                if opts[next_dir] == '.':
+                    dir = next_dir
+                    break
+            else:
+                dir = None
 
-    printg_curses(stdscr, grid, d, _min, _max, deadends, oxy)
+        if sum(1 for x in opts.values() if x == '#') == 3:
+            deadends.add(d_pos)
+            grid[d_pos] = '#'
+
+        inp.append(dir)
+
+        if d_pos[0] < _min[0]: _min[0] = d_pos[0]
+        if d_pos[1] < _min[1]: _min[1] = d_pos[1]
+        if d_pos[0] > _max[0]: _max[0] = d_pos[0]
+        if d_pos[1] > _max[1]: _max[1] = d_pos[1]
+
+        printg_curses(stdscr, grid, d_pos, _min, _max, deadends, oxy_pos)
+
+    for y in range(_min[1] - 1, _max[1] + 2):
+        for x in range(_min[0] - 1, _max[0] + 2):
+            if y == _min[1] - 1 or y == _max[1] + 1 or x == _max[0] + 1 or x == _min[0] - 1:
+                grid[(x,y)] = '#'
+            elif grid[(x,y)] == ' ':
+                grid[(x,y)] = '#'
+
+    printg_curses(stdscr, grid, d_pos, _min, _max, deadends, oxy_pos)
     stdscr.getch()
 
 wrapper(main)
