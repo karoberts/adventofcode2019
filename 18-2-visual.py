@@ -14,6 +14,7 @@ class Robot:
         self.coord = coord
         self.orig_coord = coord
         self.memo = None
+        self.path = []
 
     def __lt__(self, x):
         return self.coord < x.coord
@@ -300,6 +301,7 @@ def map_visible(grid:dict, pos:tuple, visible:set):
             if tt in 'abcdefghijklmnopqrstuvwxyz':
                 q.append(tk)
 
+bots = []
 def main(stdscr):
 
     stdscr.clear()
@@ -314,6 +316,7 @@ def main(stdscr):
     COLOR_GREEN_BLACK = 5
     COLOR_BLACK_YELLOW = 6
     COLOR_BLACK_CYAN = 7
+    COLOR_BLACK_RED = 8
 
     curses.init_pair(COLOR_RED_BLACK, curses.COLOR_RED, curses.COLOR_BLACK)
     curses.init_pair(COLOR_CYAN_BLACK, curses.COLOR_CYAN, curses.COLOR_BLACK)
@@ -322,8 +325,9 @@ def main(stdscr):
     curses.init_pair(COLOR_GREEN_BLACK, curses.COLOR_GREEN, curses.COLOR_BLACK)
     curses.init_pair(COLOR_BLACK_YELLOW, curses.COLOR_BLACK, curses.COLOR_YELLOW)
     curses.init_pair(COLOR_BLACK_CYAN, curses.COLOR_BLACK, curses.COLOR_CYAN)
+    curses.init_pair(COLOR_BLACK_RED, curses.COLOR_BLACK, curses.COLOR_RED)
 
-    COLOR_DEVICE = curses.color_pair(COLOR_RED_BLACK)
+    COLOR_DEVICE = curses.color_pair(COLOR_BLACK_RED)
     COLOR_WALLS = curses.color_pair(COLOR_BLACK_WHITE)
     COLOR_DOORS = curses.color_pair(COLOR_BLACK_YELLOW)
     COLOR_KEYS_HAVE = curses.color_pair(COLOR_BLACK_CYAN)
@@ -334,7 +338,7 @@ def main(stdscr):
 
     block = bytes([0xE2,0x96, 0x88])
     def printg_curses(stdscr, g, _max, bots, doors, _keys, gotkeys, visited:set, visible:set, steps:int):
-        botpos = {bots[0].coord, bots[1].coord, bots[2].coord, bots[3].coord}
+        botpos = {b.coord:b for b in bots}
         stdscr.erase()
         for y in range(0, _max[1] + 1):
             for x in range(0, _max[0] + 1):
@@ -343,7 +347,7 @@ def main(stdscr):
                 sc_x = x
                 try:
                     if c in botpos:
-                        stdscr.insstr(sc_y, sc_x, block, COLOR_DEVICE)
+                        stdscr.insstr(sc_y, sc_x, str(botpos[c].id), COLOR_DEVICE)
                     elif c in doors:
                         stdscr.insstr(sc_y, sc_x, doors[c], COLOR_DOORS)
                     elif c in _keys:
@@ -388,7 +392,6 @@ def main(stdscr):
         me = None
         y = 0
         botid = 0
-        bots = []
         for line in (l.strip() for l in f.readlines()):
             for x in range(0, len(line)):
                 grid[(x,y)] = line[x]
@@ -398,8 +401,10 @@ def main(stdscr):
                     botid += 1
                 elif line[x] in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ':
                     doors[line[x]] = (x,y)
+                    rdoors[(x,y)] = line[x]
                 elif line[x] in 'abcdefghijklmnopqrstuvwxyz':
                     _keys[line[x]] = (x,y)
+                    r_keys[(x,y)] = line[x]
             y += 1
         _max = (x,y)
 
@@ -410,21 +415,37 @@ def main(stdscr):
 
         printg_curses(stdscr, grid, _max, bots, rdoors, r_keys, dict(), visited, visible, 0)
 
-        ret = ['o', 'n', 'k', 'c', 'e', 'r', 'z', 'v', 'j', 'w', 'b', 'u', 'i', 'q', 't', 'y', 'h', 'x', 'd', 'f', 'm', 'a', 's', 'l', 'g', 'p']
+        fullret = ['o', 'n', 'k', 'c', 'e', 'r', 'z', 'v', 'j', 'w', 'b', 'u', 'i', 'q', 't', 'y', 'h', 'x', 'd', 'f', 'm', 'a', 's', 'l', 'g', 'p']
+        ret = [None] * 4
+
+        ret[0] = ['r', 'j', 'i', 'q', 'd']
+        ret[1] = ['e', 'z', 'v', 'y', 'x', 'p']
+        ret[2] = ['o', 'c', 't', 'h', 'f']
+        ret[3] = ['n', 'k', 'w', 'b', 'u', 'm', 'a', 's', 'l', 'g']
 
         for bot in bots:
-            bot.memo = make_memo(_keys, doors, grid, _max, bot.coord, ret)
-        #time.sleep(1.0)
-        stdscr.getch()
+            bot.memo = make_memo(_keys, doors, grid, _max, bot.coord, ret[bot.id])
+        time.sleep(0.5)
+        #stdscr.getch()
 
-        last_k = '@'
+        last_k = ['@', '@', '@', '@']
         gotkeys = set()
         steps = 0
-        for k in ret:
-            prev = memo[(last_k, k)][3]
+        for k in fullret:
+            bot = None 
+            for b in bots:
+                if (last_k[b.id], k) in b.memo:
+                    bot = b
+                    break
+            else:
+                raise Exception('key path: {} {} {}'.format(k, bots, last_k))
+
+            #bot.path.append(k)
+            prev = bot.memo[(last_k[bot.id], k)][3]
             for p in reversed(prev):
                 visited.add(p)
-                printg_curses(stdscr, grid, _max, p, rdoors, r_keys, gotkeys, visited, visible, steps)
+                bot.coord = p
+                printg_curses(stdscr, grid, _max, bots, rdoors, r_keys, gotkeys, visited, visible, steps)
                 me = p
                 steps += 1
             steps -= 1
@@ -433,12 +454,18 @@ def main(stdscr):
             rdoors.pop( doors[k.upper()] ) 
             grid[doors[k.upper()]] = '.'
             visible.clear()
-            map_visible(grid, p, visible)
-            last_k = k
-            printg_curses(stdscr, grid, _max, p, rdoors, r_keys, gotkeys, visited, visible, steps)
+            for b in bots:
+                map_visible(grid, b.coord, visible)
+            last_k[bot.id] = k
+            printg_curses(stdscr, grid, _max, bots, rdoors, r_keys, gotkeys, visited, visible, steps)
             #stdscr.getch()
 
-        printg_curses(stdscr, grid, _max, me, rdoors, r_keys, gotkeys, visited, visible, steps)
+        printg_curses(stdscr, grid, _max, bots, rdoors, r_keys, gotkeys, visited, visible, steps)
         stdscr.getch()
 
 wrapper(main)
+
+"""
+for b in bots:
+    print(b.id, b.path)
+    """
