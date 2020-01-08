@@ -99,8 +99,15 @@ def run_prog(ops, ctx, inp):
         if inc_p:
             ctx['p'] += ops_size[opcode]
 
+_min = [0,0]
+_max = [0,0]
+oxy_pos = None
+deadends = set()
+
 block = bytes([0xE2,0x96, 0x88])
-def printg_curses(stdscr, g, d, _min, _max, deadends, oxy):
+def printg_curses(stdscr, g, d):
+    global oxy_pos, deadends, _min, _max
+
     sc_y = 1
     sc_x = 1
     stdscr.erase()
@@ -108,7 +115,7 @@ def printg_curses(stdscr, g, d, _min, _max, deadends, oxy):
         for x in range(_min[0] - 1, _max[0] + 2):
             c = (x,y)
             try:
-                if c == oxy:
+                if c == oxy_pos:
                     stdscr.insch(sc_y, sc_x, 'o', curses.color_pair(4) | curses.A_BOLD)
                 elif c == d:
                     stdscr.insstr(sc_y, sc_x, block, curses.color_pair(1))
@@ -117,8 +124,10 @@ def printg_curses(stdscr, g, d, _min, _max, deadends, oxy):
                 elif c in g:
                     if g[c] == '#':
                         stdscr.insstr(sc_y, sc_x, block, curses.color_pair(0))
-                    else:
+                    elif g[c] == '.':
                         stdscr.insstr(sc_y, sc_x, block, curses.color_pair(3) | curses.A_DIM)
+                    elif g[c] == 'O':
+                        stdscr.insstr(sc_y, sc_x, block, curses.color_pair(2))
                 else:
                     stdscr.insch(sc_y, sc_x, ' ')
             except (curses.error):
@@ -127,7 +136,6 @@ def printg_curses(stdscr, g, d, _min, _max, deadends, oxy):
         sc_x = 1
         sc_y += 1
     stdscr.refresh()
-    #time.sleep(0.01)
 
 NORTH = 1
 SOUTH = 2
@@ -148,7 +156,26 @@ def _next(d, dir):
     n = xy_delta_map[dir]
     return (d[0] + n[0], d[1] + n[1])
 
+def oxy_flood(stdscr, grid:dict):
+    global oxy_pos, deadends, _min, _max
+
+    q = [oxy_pos]
+    while len(q) > 0:
+        pos = q.pop(0)
+
+        for dir in range(1, 4+1):
+            npos = _next(pos, dir)
+            g = grid[npos]
+            if npos in deadends:
+                grid[npos] = 'O'
+                deadends.remove(npos)
+                q.append(npos)
+
+        printg_curses(stdscr, grid, None)
+        time.sleep(0.02)
+
 def main(stdscr):
+    global oxy_pos, deadends, _min, _max
 
     # Clear screen
     stdscr.clear()
@@ -173,11 +200,7 @@ def main(stdscr):
 
     blocks = 0
     grid = defaultdict(lambda:' ')
-    deadends = set()
-    _min = [0,0]
-    _max = [0,0]
     d_pos = (0,0)
-    oxy_pos = None
     grid[d_pos] = '.'
 
     while dir is not None:
@@ -230,7 +253,8 @@ def main(stdscr):
         if d_pos[0] > _max[0]: _max[0] = d_pos[0]
         if d_pos[1] > _max[1]: _max[1] = d_pos[1]
 
-        printg_curses(stdscr, grid, d_pos, _min, _max, deadends, oxy_pos)
+        printg_curses(stdscr, grid, d_pos)
+        time.sleep(0.01)
 
     for y in range(_min[1] - 1, _max[1] + 2):
         for x in range(_min[0] - 1, _max[0] + 2):
@@ -238,8 +262,14 @@ def main(stdscr):
                 grid[(x,y)] = '#'
             elif grid[(x,y)] == ' ':
                 grid[(x,y)] = '#'
+    grid[d_pos] = '#'
+    deadends.add(d_pos)
 
-    printg_curses(stdscr, grid, d_pos, _min, _max, deadends, oxy_pos)
+    printg_curses(stdscr, grid, d_pos)
+    #stdscr.getch()
+    time.sleep(1.0)
+
+    oxy_flood(stdscr, grid)
     stdscr.getch()
 
 wrapper(main)
