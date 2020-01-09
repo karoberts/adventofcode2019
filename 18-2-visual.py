@@ -308,6 +308,9 @@ def main(stdscr):
     curses.curs_set(0)
     stdscr.refresh()
 
+    #stdscr.idcok(False)
+    #stdscr.idlok(False)
+
     COLOR_BLACK_WHITE = 0
     COLOR_RED_BLACK = 1
     COLOR_CYAN_BLACK = 2
@@ -327,7 +330,7 @@ def main(stdscr):
     curses.init_pair(COLOR_BLACK_CYAN, curses.COLOR_BLACK, curses.COLOR_CYAN)
     curses.init_pair(COLOR_BLACK_RED, curses.COLOR_BLACK, curses.COLOR_RED)
 
-    COLOR_DEVICE = curses.color_pair(COLOR_BLACK_RED)
+    COLOR_DEVICE = curses.color_pair(COLOR_RED_BLACK)
     COLOR_WALLS = curses.color_pair(COLOR_BLACK_WHITE)
     COLOR_DOORS = curses.color_pair(COLOR_BLACK_YELLOW)
     COLOR_KEYS_HAVE = curses.color_pair(COLOR_BLACK_CYAN)
@@ -345,7 +348,8 @@ def main(stdscr):
             for x in range(0, _max[0] + 1):
                 c = (x,y)
                 if c in botpos:
-                    stdscr.addstr(y, x, str(botpos[c].id), COLOR_DEVICE)
+                    stdscr.addstr(y, x, block, COLOR_DEVICE)
+                    pass
                 elif c in doors:
                     stdscr.addstr(y, x, doors[c], COLOR_DOORS)
                 elif c in _keys:
@@ -407,8 +411,9 @@ def main(stdscr):
         visited = set()
         for bot in bots:
             map_visible(grid, bot.coord, visible)
+        botpos = {b.coord:b for b in bots}
 
-        printg_curses(stdscr, grid, _max, bots, rdoors, r_keys, dict(), visited, visible, 0)
+        printg_curses(stdscr, grid, _max, botpos, rdoors, r_keys, dict(), visited, visible, 0)
 
         fullret = ['o', 'n', 'k', 'c', 'e', 'r', 'z', 'v', 'j', 'w', 'b', 'u', 'i', 'q', 't', 'y', 'h', 'x', 'd', 'f', 'm', 'a', 's', 'l', 'g', 'p']
         ret = [None] * 4
@@ -424,7 +429,6 @@ def main(stdscr):
         #stdscr.getch()
 
         last_k = ['@', '@', '@', '@']
-        botpos = {b.coord:b for b in bots}
         gotkeys = set()
         steps = 0
         for k in fullret:
@@ -446,9 +450,9 @@ def main(stdscr):
                 printg_curses(stdscr, grid, _max, botpos, rdoors, r_keys, gotkeys, visited, visible, steps)
                 me = p
                 steps += 1
-                time.sleep(0.005)
+                time.sleep(0.01)
             steps -= 1
-            time.sleep(0.1)
+            #time.sleep(0.1)
             gotkeys.add(k)
             rdoors.pop( doors[k.upper()] ) 
             grid[doors[k.upper()]] = '.'
