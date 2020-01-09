@@ -341,35 +341,40 @@ def main(stdscr):
     COLOR_STATUS_KEYS_HAVE = curses.color_pair(COLOR_CYAN_BLACK)
     COLOR_STATUS_KEYS_NEED = curses.color_pair(COLOR_WHITE_BLACK) | curses.A_DIM
 
-    block = bytes([0xE2,0x96, 0x88])
+    block = bytes([0xE2,0x96, 0x88,0xE2,0x96, 0x88])
     def printg_curses(stdscr, g, _max, botpos, doors, _keys, gotkeys, visited:set, visible:set, steps:int, end:bool = False):
         stdscr.erase()
+        sy = 0
+        sx = 0
         for y in range(0, _max[1] + 1):
             for x in range(0, _max[0] + 1):
                 c = (x,y)
                 if c in botpos:
-                    stdscr.addstr(y, x, block, COLOR_DEVICE)
+                    stdscr.addstr(sy, sx, block, COLOR_DEVICE)
                     pass
                 elif c in doors:
-                    stdscr.addstr(y, x, doors[c], COLOR_DOORS)
+                    stdscr.addstr(sy, sx, doors[c] + doors[c], COLOR_DOORS)
                 elif c in _keys:
                     if _keys[c] in gotkeys:
-                        stdscr.addstr(y, x, _keys[c], COLOR_KEYS_HAVE)
+                        stdscr.addstr(sy, sx, _keys[c] + _keys[c], COLOR_KEYS_HAVE)
                     else:
-                        stdscr.addstr(y, x, _keys[c], COLOR_KEYS_NEED)
+                        stdscr.addstr(sy, sx, _keys[c] + _keys[c], COLOR_KEYS_NEED)
                 elif c in visited:
-                    stdscr.addstr(y, x, block, COLOR_VISITED)
+                    stdscr.addstr(sy, sx, block, COLOR_VISITED)
                 elif c in visible:
-                    stdscr.addstr(y, x, block, COLOR_VISIBLE)
+                    stdscr.addstr(sy, sx, block, COLOR_VISIBLE)
                 elif c in g:
                     if g[c] == '#':
-                        stdscr.addstr(y, x, block, COLOR_WALLS)
+                        stdscr.addstr(sy, sx, block, COLOR_WALLS)
                     elif g[c] == '.':
-                        stdscr.addstr(y, x, block, COLOR_FLOOR)
+                        stdscr.addstr(sy, sx, block, COLOR_FLOOR)
+                sx += 2
+            sx = 0
+            sy += 1
 
-        stdscr.addstr(2, _max[0] + 5, 'Steps: {}'.format(steps))
-        stdscr.addstr(3, _max[0] + 5, 'Keys : ')
-        xpos = _max[0] + 5 + 7
+        stdscr.addstr(2, _max[0] * 2 + 5, 'Steps: {}'.format(steps))
+        stdscr.addstr(3, _max[0] * 2 + 5, 'Keys : ')
+        xpos = _max[0] * 2 + 5 + 7
         for k in 'abcdefghijklmnopqrstuvwxyz':
             if k in gotkeys:
                 stdscr.addstr(3, xpos, k, COLOR_STATUS_KEYS_HAVE)
@@ -378,7 +383,7 @@ def main(stdscr):
             xpos += 2
 
         if end:
-            stdscr.addstr(8, _max[0] + 5, 'Press enter to exit')
+            stdscr.addstr(8, _max[0] * 2 + 5, 'Press enter to exit')
 
         stdscr.refresh()
 
