@@ -104,36 +104,31 @@ _max = [0,0]
 oxy_pos = None
 deadends = set()
 
-block = bytes([0xE2,0x96, 0x88])
+block = bytes([0xE2,0x96, 0x88,0xE2,0x96,0x88])
 def printg_curses(stdscr, g, d):
     global oxy_pos, deadends, _min, _max
 
-    sc_y = 1
-    sc_x = 1
+    sc_y = 0
+    sc_x = 0
     stdscr.erase()
     for y in range(_min[1] - 1, _max[1] + 2):
         for x in range(_min[0] - 1, _max[0] + 2):
             c = (x,y)
-            try:
-                if c == oxy_pos:
-                    stdscr.insch(sc_y, sc_x, 'o', curses.color_pair(4) | curses.A_BOLD)
-                elif c == d:
-                    stdscr.insstr(sc_y, sc_x, block, curses.color_pair(1))
-                elif c in deadends:
-                    stdscr.insstr(sc_y, sc_x, block, curses.color_pair(2) | curses.A_DIM)
-                elif c in g:
-                    if g[c] == '#':
-                        stdscr.insstr(sc_y, sc_x, block, curses.color_pair(0))
-                    elif g[c] == '.':
-                        stdscr.insstr(sc_y, sc_x, block, curses.color_pair(3) | curses.A_DIM)
-                    elif g[c] == 'O':
-                        stdscr.insstr(sc_y, sc_x, block, curses.color_pair(2))
-                else:
-                    stdscr.insch(sc_y, sc_x, ' ')
-            except (curses.error):
-                pass
-            sc_x += 1
-        sc_x = 1
+            if c == oxy_pos:
+                stdscr.addstr(sc_y, sc_x, block, curses.color_pair(4) | curses.A_BOLD)
+            elif c == d:
+                stdscr.addstr(sc_y, sc_x, block, curses.color_pair(1))
+            elif c in deadends:
+                stdscr.addstr(sc_y, sc_x, block, curses.color_pair(2) | curses.A_DIM)
+            elif c in g:
+                if g[c] == '#':
+                    stdscr.addstr(sc_y, sc_x, block, curses.color_pair(0))
+                elif g[c] == '.':
+                    stdscr.addstr(sc_y, sc_x, block, curses.color_pair(3) | curses.A_DIM)
+                elif g[c] == 'O':
+                    stdscr.addstr(sc_y, sc_x, block, curses.color_pair(2))
+            sc_x += 2
+        sc_x = 0
         sc_y += 1
     stdscr.refresh()
 
