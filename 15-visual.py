@@ -2,6 +2,7 @@ import re
 import sys
 import json
 import itertools
+import heapq
 import curses
 import time
 from curses import wrapper
@@ -103,6 +104,85 @@ _min = [0,0]
 _max = [0,0]
 oxy_pos = None
 deadends = set()
+steps_to_oxy = set()
+
+def dijkstra_findoxy(me:tuple, oxy:tuple, grid:dict):
+    global deadends
+
+    tests = [ (1, 0), (-1, 0), (0, -1), (0, 1) ]
+    def get_neighbors(x,y):
+        k = (x,y)
+        c = grid[k]
+        ns = []
+
+        for t in tests:
+            tx = x + t[0]
+            ty = y + t[1]
+            tk = (tx, ty)
+            tt = grid[tk]
+
+            if tk in deadends or tt == '.':
+                ns.append( [1, tx, ty, tk, True] )
+
+        return ns
+
+    dist = defaultdict(lambda :999999999)
+    prev = {}
+
+    dist[me] = 0
+    prev[me] = None
+
+    finder = {}
+
+    inq = set()
+    h = []
+    heapq.heappush(h, [0, me[0], me[1], me, True])
+    finder[me] = h[0]
+    inq.add(me)
+
+    while len(h) > 0:
+        u = heapq.heappop(h)
+        if not u[4]:
+            continue
+        inq.remove(u[3])
+        uk = u[3]
+        for v in get_neighbors(u[1], u[2]):
+            alt = dist[uk] + v[0]
+            if alt < dist[v[3]]:
+                dist[v[3]] = alt
+                prev[v[3]] = (uk, v[0], v[1], v[2])
+                entry = [alt, v[1], v[2], v[3], True]
+                if v[3] in inq:
+                    finder[v[3]][4] = False
+                inq.add(v[3])
+                finder[v[3]] = entry
+
+                if v[3] == oxy:
+                    return prev
+
+                heapq.heappush(h, entry)
+
+    return None
+
+def make_memo(_keys:dict, doors:dict, grid:dict, _max:tuple, me:tuple):
+    memo = dict()
+
+    #print(doors)
+    for k in _keys.keys():
+        for k2 in _keys.keys():
+            if k == k2: continue
+            r = memo_dijkstra_finddoors(_keys[k], _keys[k2], grid, _max)
+            #print(k, 'to', k2, r)
+            memo[(k, k2)] = r
+    #printg2(g, _max, None)
+
+    for k in _keys.keys():
+        r = memo_dijkstra_finddoors(me, _keys[k], grid, _max)
+        memo[('@', k)] = r
+
+    #print(memo)
+
+    return memo
 
 MODE_EXPLORE = 0
 MODE_FIND_OXY = 1
@@ -111,7 +191,7 @@ MODE_DONE = 3
 
 block = bytes([0xE2,0x96, 0x88,0xE2,0x96,0x88])
 def printg_curses(stdscr, g, d, mode, steps = None, minutes = None):
-    global oxy_pos, deadends, _min, _max
+    global oxy_pos, deadends, _min, _max, steps_to_oxy
 
     sc_y = 0
     sc_x = 0
@@ -123,6 +203,10 @@ def printg_curses(stdscr, g, d, mode, steps = None, minutes = None):
                 stdscr.addstr(sc_y, sc_x, block, curses.color_pair(4) | curses.A_BOLD)
             elif c == d:
                 stdscr.addstr(sc_y, sc_x, block, curses.color_pair(1))
+            elif g[c] == 'O':
+                stdscr.addstr(sc_y, sc_x, block, curses.color_pair(2))
+            elif c in steps_to_oxy:
+                stdscr.addstr(sc_y, sc_x, block, curses.color_pair(4) | curses.A_DIM)
             elif c in deadends:
                 stdscr.addstr(sc_y, sc_x, block, curses.color_pair(2) | curses.A_DIM)
             elif c in g:
@@ -130,8 +214,6 @@ def printg_curses(stdscr, g, d, mode, steps = None, minutes = None):
                     stdscr.addstr(sc_y, sc_x, block, curses.color_pair(0))
                 elif g[c] == '.':
                     stdscr.addstr(sc_y, sc_x, block, curses.color_pair(3) | curses.A_DIM)
-                elif g[c] == 'O':
-                    stdscr.addstr(sc_y, sc_x, block, curses.color_pair(2))
             sc_x += 2
         sc_x = 0
         sc_y += 1
@@ -180,6 +262,7 @@ def oxy_flood(stdscr, grid:dict):
 
     max_min = minutes
     q = [(oxy_pos,0)]
+    last_depth = 0
     while len(q) > 0:
         pos = q.pop(0)
         max_min = max(max_min, pos[1])
@@ -192,12 +275,14 @@ def oxy_flood(stdscr, grid:dict):
                 deadends.remove(npos)
                 q.append((npos, pos[1] + 1))
 
-        printg_curses(stdscr, grid, None, MODE_OXY, steps, max_min)
-        #time.sleep(0.02)
+        if pos[1] > last_depth:
+            last_depth = pos[1]
+            printg_curses(stdscr, grid, None, MODE_OXY, steps, max_min)
+        time.sleep(0.02)
     minutes = max_min
 
 def main(stdscr):
-    global oxy_pos, deadends, _min, _max, steps, minutes
+    global oxy_pos, deadends, _min, _max, steps, minutes, steps_to_oxy
 
     # Clear screen
     stdscr.clear()
@@ -276,7 +361,7 @@ def main(stdscr):
         if d_pos[1] > _max[1]: _max[1] = d_pos[1]
 
         printg_curses(stdscr, grid, d_pos, MODE_EXPLORE)
-        #time.sleep(0.01)
+        time.sleep(0.005)
 
     for y in range(_min[1] - 1, _max[1] + 2):
         for x in range(_min[0] - 1, _max[0] + 2):
@@ -288,12 +373,28 @@ def main(stdscr):
     deadends.add(d_pos)
 
     printg_curses(stdscr, grid, d_pos, MODE_FIND_OXY, steps, minutes)
+
+    prev = dijkstra_findoxy((0,0), oxy_pos, grid)
+    p = prev[oxy_pos][0]
+    path = [p]
+    while p != (0,0):
+        p = prev[p][0]
+        path.append(p)
+    
+    for p in reversed(path):
+        steps_to_oxy.add(p)
+        steps += 1
+        printg_curses(stdscr, grid, p, MODE_FIND_OXY, steps, minutes)
+        time.sleep(0.02)
+    
+    #steps_to_oxy.clear()
+
     #stdscr.getch()
     time.sleep(1.0)
 
     oxy_flood(stdscr, grid)
 
-    printg_curses(stdscr, grid, d_pos, MODE_DONE, steps, minutes)
+    printg_curses(stdscr, grid, None, MODE_DONE, steps, minutes)
     stdscr.getch()
 
 wrapper(main)
