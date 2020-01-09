@@ -104,8 +104,13 @@ _max = [0,0]
 oxy_pos = None
 deadends = set()
 
+MODE_EXPLORE = 0
+MODE_FIND_OXY = 1
+MODE_OXY = 2
+MODE_DONE = 3
+
 block = bytes([0xE2,0x96, 0x88,0xE2,0x96,0x88])
-def printg_curses(stdscr, g, d):
+def printg_curses(stdscr, g, d, mode, steps = None, minutes = None):
     global oxy_pos, deadends, _min, _max
 
     sc_y = 0
@@ -130,6 +135,22 @@ def printg_curses(stdscr, g, d):
             sc_x += 2
         sc_x = 0
         sc_y += 1
+
+    sc_x = (_max[0] - _min[0] + 2) * 2
+    if mode == MODE_EXPLORE:
+        stdscr.addstr(1, sc_x + 5, 'Exploring...')
+    if mode == MODE_FIND_OXY:
+        stdscr.addstr(1, sc_x + 5, 'Finding Oxygen...')
+    elif mode == MODE_OXY:
+        stdscr.addstr(1, sc_x + 5, 'Filling...')
+    elif mode == MODE_DONE:
+        stdscr.addstr(1, sc_x + 5, 'Done, press enter to exit')
+
+    if mode > MODE_EXPLORE:
+        stdscr.addstr(3, sc_x + 5, 'Steps: ' + str(steps))
+    if mode > MODE_FIND_OXY:
+        stdscr.addstr(5, sc_x + 5, 'Minutes: ' + str(minutes))
+
     stdscr.refresh()
 
 NORTH = 1
@@ -147,30 +168,36 @@ nextdir = {NORTH:WEST, WEST:SOUTH, SOUTH:EAST, EAST:NORTH}
 xy_delta_map = {NORTH:(0,-1), SOUTH:(0,1), WEST:(-1,0),EAST:(1,0)}
 dirs_to_try = {NORTH: [NORTH, EAST, SOUTH, WEST], EAST: [EAST, SOUTH, WEST, NORTH], SOUTH: [SOUTH, WEST, NORTH, EAST], WEST: [WEST, NORTH, EAST, SOUTH]}
 
+steps = 0
+minutes = 0
+
 def _next(d, dir):
     n = xy_delta_map[dir]
     return (d[0] + n[0], d[1] + n[1])
 
 def oxy_flood(stdscr, grid:dict):
-    global oxy_pos, deadends, _min, _max
+    global oxy_pos, deadends, _min, _max, minutes, steps
 
-    q = [oxy_pos]
+    max_min = minutes
+    q = [(oxy_pos,0)]
     while len(q) > 0:
         pos = q.pop(0)
+        max_min = max(max_min, pos[1])
 
         for dir in range(1, 4+1):
-            npos = _next(pos, dir)
+            npos = _next(pos[0], dir)
             g = grid[npos]
             if npos in deadends:
                 grid[npos] = 'O'
                 deadends.remove(npos)
-                q.append(npos)
+                q.append((npos, pos[1] + 1))
 
-        printg_curses(stdscr, grid, None)
-        time.sleep(0.02)
+        printg_curses(stdscr, grid, None, MODE_OXY, steps, max_min)
+        #time.sleep(0.02)
+    minutes = max_min
 
 def main(stdscr):
-    global oxy_pos, deadends, _min, _max
+    global oxy_pos, deadends, _min, _max, steps, minutes
 
     # Clear screen
     stdscr.clear()
@@ -248,8 +275,8 @@ def main(stdscr):
         if d_pos[0] > _max[0]: _max[0] = d_pos[0]
         if d_pos[1] > _max[1]: _max[1] = d_pos[1]
 
-        printg_curses(stdscr, grid, d_pos)
-        time.sleep(0.01)
+        printg_curses(stdscr, grid, d_pos, MODE_EXPLORE)
+        #time.sleep(0.01)
 
     for y in range(_min[1] - 1, _max[1] + 2):
         for x in range(_min[0] - 1, _max[0] + 2):
@@ -260,11 +287,13 @@ def main(stdscr):
     grid[d_pos] = '#'
     deadends.add(d_pos)
 
-    printg_curses(stdscr, grid, d_pos)
+    printg_curses(stdscr, grid, d_pos, MODE_FIND_OXY, steps, minutes)
     #stdscr.getch()
     time.sleep(1.0)
 
     oxy_flood(stdscr, grid)
+
+    printg_curses(stdscr, grid, d_pos, MODE_DONE, steps, minutes)
     stdscr.getch()
 
 wrapper(main)
