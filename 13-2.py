@@ -47,7 +47,7 @@ def run_prog(ops, ctx, inp):
             v = inp[ctx['pi']]
             ctx['pi'] += 1
             writev(ops, ctx['p'], 1, ctx['rb'], v)
-            if output: print('inp', ops[ctx['p']+1], v)
+            #print('inp', ops[ctx['p']+1], v, ctx['pi'], len(inp))
             pass
         elif opcode == 4:
             v1 = readv(ops, ctx['p'], 1, ctx['rb'])
@@ -129,6 +129,7 @@ with open('13.txt') as f:
 
     def print_board():
         tiles = {0:' ', 1:'W', 2:'B', 3:'P', 4:'b'}
+        print(_max, _min)
         for y in range(_min[1], _max[1] + 1):
             for x in range(_min[0], _max[0] + 1):
                 print(tiles[grid[(x,y)]], end='')
@@ -139,14 +140,19 @@ with open('13.txt') as f:
 
     ops = initops.copy()
     ops[0] = 2
-    inp = [0]
+    inp = []
     score = None
+
+    print('ball', ball)
+    print('paddle', paddle)
 
     oldblocks = 0
     oldscore = 0
     for i in range(0, 200):
         ctx =  {'p': 0, 'pi':0, 'rb':0}
         blocks = 0
+        print('starting run')
+        seen = 0
         while True:
             x = run_prog(ops, ctx, inp)
             if x is None: 
@@ -154,9 +160,12 @@ with open('13.txt') as f:
             y = run_prog(ops, ctx, inp)
             t = run_prog(ops, ctx, inp)
 
+#            if t not in [0,1,2]:
+#                print('got',x,y,t)
+
             if x == -1 and y == 0:
                 if t > 0 and t != oldscore:
-                    print('new score', t)
+                    #print('new score', t)
                     oldscore = t
                 score = t
                 if blocks == 0:
@@ -164,24 +173,31 @@ with open('13.txt') as f:
                 continue
 
             grid[(x,y)] = t
-            if t == 4: ball = (x,y)
-            #if t == 3: paddle = [x,y]
-            if t == 2: blocks += 1
+            if t == 4: 
+                ball = (x,y)
+                #print(' ball now', ball)
+            if t == 3:
+                paddle = [x,y]
+                #print(' padl now', (x,y))
 
-            if paddle[0] == ball[0]: 
-                inp.append(0)
-            elif paddle[0] < ball[0]:
-                inp.append(1)
-                paddle[0] += 1
-            else: 
-                inp.append(-1)
-                paddle[0] -= 1
+            if t == 2: 
+                blocks += 1
+
+            if t == 4:
+                if paddle[0] == ball[0]: 
+                    inp.append(0)
+                elif paddle[0] < ball[0]:
+                    inp.append(1)
+                    #paddle[0] += 1
+                else: 
+                    inp.append(-1)
+                    #paddle[0] -= 1
+                #print(' => inp =', inp[-1])
+
             #print('ball', ball, 'paddle', paddle)
             #print_board()
+        break
 
-        if blocks != oldblocks:
-            print('blocks', blocks)
-        oldblocks = blocks
         #print_board()
         if blocks == 0:
             break
