@@ -164,26 +164,6 @@ def dijkstra_findoxy(me:tuple, oxy:tuple, grid:dict):
 
     return None
 
-def make_memo(_keys:dict, doors:dict, grid:dict, _max:tuple, me:tuple):
-    memo = dict()
-
-    #print(doors)
-    for k in _keys.keys():
-        for k2 in _keys.keys():
-            if k == k2: continue
-            r = memo_dijkstra_finddoors(_keys[k], _keys[k2], grid, _max)
-            #print(k, 'to', k2, r)
-            memo[(k, k2)] = r
-    #printg2(g, _max, None)
-
-    for k in _keys.keys():
-        r = memo_dijkstra_finddoors(me, _keys[k], grid, _max)
-        memo[('@', k)] = r
-
-    #print(memo)
-
-    return memo
-
 MODE_EXPLORE = 0
 MODE_FIND_OXY = 1
 MODE_OXY = 2
@@ -278,7 +258,7 @@ def oxy_flood(stdscr, grid:dict):
         if pos[1] > last_depth:
             last_depth = pos[1]
             printg_curses(stdscr, grid, None, MODE_OXY, steps, max_min)
-        time.sleep(0.02)
+        time.sleep(0.01)
     minutes = max_min
 
 def main(stdscr):
@@ -373,6 +353,7 @@ def main(stdscr):
     deadends.add(d_pos)
 
     printg_curses(stdscr, grid, d_pos, MODE_FIND_OXY, steps, minutes)
+    time.sleep(0.5)
 
     prev = dijkstra_findoxy((0,0), oxy_pos, grid)
     p = prev[oxy_pos][0]
